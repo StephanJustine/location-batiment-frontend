@@ -41,14 +41,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (token) {
         try {
           const userData = await authService.getCurrentUser();
-          console.log('✅ Utilisateur chargé:', userData);
+          console.log('✅ Utilisateur chargé:', userData?.email);
           setUser(userData);
-        } catch (error) {
-          console.error('❌ Erreur chargement utilisateur:', error);
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          Cookies.remove('access_token');
-          Cookies.remove('refresh_token');
+        } catch (error: any) {
+          // Si erreur 401, token invalide
+          if (error.response?.status === 401) {
+            console.log('❌ Token invalide, nettoyage');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            Cookies.remove('access_token');
+            Cookies.remove('refresh_token');
+          } else {
+            console.error('❌ Erreur chargement utilisateur:', error);
+          }
         }
       }
       setIsLoading(false);
@@ -60,15 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (username: string, password: string) => {
     try {
       const response = await authService.login(username, password);
-      console.log('✅ Login réussi, token stocké');
+      console.log('✅ Login réussi');
       
-      // Récupérer l'utilisateur après login
       const userData = await authService.getCurrentUser();
       setUser(userData);
-      
-      // Vérifier que le token est bien stocké
-      const storedToken = localStorage.getItem('access_token');
-      console.log('🔍 Vérification token après login:', !!storedToken);
       
     } catch (error) {
       console.error('❌ Login failed:', error);

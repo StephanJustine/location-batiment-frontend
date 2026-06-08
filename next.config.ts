@@ -2,25 +2,20 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  allowedDevOrigins: ['192.168.1.77', '192.168.18.116', 'localhost', '127.0.0.1'],
+  allowedDevOrigins: ['192.168.1.81', '192.168.18.116', 'localhost', '127.0.0.1', '*'],
   images: {
     remotePatterns: [
       {
         protocol: 'http',
-        hostname: 'localhost',
+        hostname: '**',
         port: '',
         pathname: '/**',
       },
     ],
   },
-  // Ajout des rewrites pour proxy les requêtes API
+  // Désactiver COMPLÈTEMENT les rewrites
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
-      },
-    ];
+    return [];
   },
 };
 

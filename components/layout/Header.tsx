@@ -16,6 +16,7 @@ import {
   Button,
   useMediaQuery,
   useTheme,
+  Tooltip,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -27,6 +28,7 @@ import {
   DoneAll as DoneAllIcon,
   CheckCircle as CheckCircleIcon,
   Circle as CircleIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
@@ -94,6 +96,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
     } catch (error) {
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     }
+  };
+
+  const refreshNotifications = () => {
+    setNotifLoading(true);
+    fetchNotifications();
   };
 
   const handleNotificationClick = async (notif: Notification) => {
@@ -171,26 +178,28 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {/* Actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 }, ml: 'auto' }}>
           {/* Notifications */}
-          <IconButton 
-            onClick={(e) => setNotifAnchorEl(e.currentTarget)} 
-            sx={{ color: '#2e7d32', p: 0.5 }}
-            size="small"
-          >
-            <Badge 
-              badgeContent={unreadCount} 
-              color="error" 
-              sx={{ 
-                '& .MuiBadge-badge': { 
-                  fontSize: 9, 
-                  height: 16, 
-                  minWidth: 16,
-                  fontWeight: 600
-                } 
-              }}
+          <Tooltip title="Notifications">
+            <IconButton 
+              onClick={(e) => setNotifAnchorEl(e.currentTarget)} 
+              sx={{ color: '#2e7d32', p: 0.5 }}
+              size="small"
             >
-              <NotificationsIcon sx={{ fontSize: 20 }} />
-            </Badge>
-          </IconButton>
+              <Badge 
+                badgeContent={unreadCount} 
+                color="error" 
+                sx={{ 
+                  '& .MuiBadge-badge': { 
+                    fontSize: 9, 
+                    height: 16, 
+                    minWidth: 16,
+                    fontWeight: 600
+                  } 
+                }}
+              >
+                <NotificationsIcon sx={{ fontSize: 20 }} />
+              </Badge>
+            </IconButton>
+          </Tooltip>
 
           {/* User chip (desktop only) */}
           {!isTablet && (
@@ -209,15 +218,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
           )}
 
           {/* Avatar */}
-          <IconButton 
-            onClick={(e) => setAnchorEl(e.currentTarget)} 
-            size="small"
-            sx={{ p: 0.5 }}
-          >
-            <Avatar sx={{ bgcolor: '#2e7d32', width: 32, height: 32, fontSize: '0.8rem' }}>
-              {getUserInitials()}
-            </Avatar>
-          </IconButton>
+          <Tooltip title={user?.nom || 'Profil'}>
+            <IconButton 
+              onClick={(e) => setAnchorEl(e.currentTarget)} 
+              size="small"
+              sx={{ p: 0.5 }}
+            >
+              <Avatar sx={{ bgcolor: '#2e7d32', width: 32, height: 32, fontSize: '0.8rem' }}>
+                {getUserInitials()}
+              </Avatar>
+            </IconButton>
+          </Tooltip>
         </Box>
 
         {/* User Menu */}
@@ -231,7 +242,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             paper: { 
               sx: { 
                 mt: 1, 
-                minWidth: 180, 
+                minWidth: 200, 
                 borderRadius: 2,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
               } 
@@ -248,11 +259,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </Box>
           <MenuItem onClick={() => setAnchorEl(null)} sx={{ py: 1, px: 2 }}>
             <DashboardIcon sx={{ mr: 1.5, fontSize: 18, color: '#2e7d32' }} />
-            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>Dashboard</Typography>
+            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>Tableau de bord</Typography>
           </MenuItem>
           <MenuItem onClick={() => setAnchorEl(null)} sx={{ py: 1, px: 2 }}>
             <PersonIcon sx={{ mr: 1.5, fontSize: 18, color: '#2e7d32' }} />
-            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>Profil</Typography>
+            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>Mon profil</Typography>
           </MenuItem>
           <MenuItem onClick={() => setAnchorEl(null)} sx={{ py: 1, px: 2 }}>
             <SettingsIcon sx={{ mr: 1.5, fontSize: 18, color: '#2e7d32' }} />
@@ -275,8 +286,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
             paper: { 
               sx: { 
                 mt: 1, 
-                width: { xs: 300, sm: 340 }, 
-                maxHeight: 400, 
+                width: { xs: 320, sm: 360 }, 
+                maxHeight: 450, 
                 borderRadius: 2,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
               } 
@@ -287,16 +298,23 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
               Notifications
             </Typography>
-            {unreadCount > 0 && (
-              <Button 
-                size="small" 
-                startIcon={<DoneAllIcon sx={{ fontSize: 14 }} />} 
-                onClick={markAllAsRead} 
-                sx={{ fontSize: '0.65rem', color: '#2e7d32', textTransform: 'none', minWidth: 'auto', p: 0.5 }}
-              >
-                Tout lire
-              </Button>
-            )}
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Tooltip title="Actualiser">
+                <IconButton size="small" onClick={refreshNotifications} sx={{ p: 0.5 }}>
+                  <RefreshIcon sx={{ fontSize: 16, color: '#757575' }} />
+                </IconButton>
+              </Tooltip>
+              {unreadCount > 0 && (
+                <Button 
+                  size="small" 
+                  startIcon={<DoneAllIcon sx={{ fontSize: 14 }} />} 
+                  onClick={markAllAsRead} 
+                  sx={{ fontSize: '0.65rem', color: '#2e7d32', textTransform: 'none', minWidth: 'auto', p: 0.5 }}
+                >
+                  Tout lire
+                </Button>
+              )}
+            </Box>
           </Box>
 
           {notifLoading ? (
@@ -325,6 +343,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     alignItems: 'flex-start', 
                     bgcolor: notif.read ? 'transparent' : alpha('#2e7d32', 0.04),
                     borderBottom: '1px solid #f0f0f0',
+                    '&:hover': { bgcolor: alpha('#2e7d32', 0.08) },
                     '&:last-child': { borderBottom: 'none' }
                   }}
                 >
@@ -352,7 +371,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     size="small" 
                     sx={{ fontSize: '0.65rem', color: '#2e7d32', textTransform: 'none' }}
                   >
-                    Voir tout ({notifications.length})
+                    Voir toutes ({notifications.length})
                   </Button>
                 </Box>
               )}
