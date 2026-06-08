@@ -1,15 +1,8 @@
-// import type { NextConfig } from "next";
-
-// const nextConfig: NextConfig = {
-//   /* config options here */
-// };
-
-// export default nextConfig;
-
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  allowedDevOrigins: ['192.168.1.77', '192.168.18.116', 'localhost', '127.0.0.1'],
   images: {
     remotePatterns: [
       {
@@ -18,15 +11,17 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'api.example.com',
-        port: '',
-        pathname: '/**',
-      },
     ],
   },
-  // Supprimez swcMinify qui est maintenant par défaut
+  // Ajout des rewrites pour proxy les requêtes API
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:8000/api/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

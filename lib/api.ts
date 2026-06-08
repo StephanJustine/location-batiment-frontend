@@ -1,7 +1,9 @@
+// export default api;
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// Utiliser le proxy via Next.js (plus besoin de l'URL complète)
+const API_BASE_URL = '/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,6 +11,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true,
+  timeout: 15000,
 });
 
 // Intercepteur pour ajouter le token
@@ -17,13 +20,22 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log(`🚀 Requête: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error(`❌ Erreur ${error.response?.status}:`, error.response?.data);
+    // Si erreur 401 (non autorisé), nettoyer les tokens
+    if (error.response?.status === 401) {
+      console.log('🔐 Token invalide ou expiré, nettoyage des tokens');
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      Cookies.remove('access_token');
+      Cookies.remove('refresh_token');
+    }
+    console.error(`❌ Erreur ${error.response?.status}:`, error.message);
     return Promise.reject(error);
   }
 );
@@ -59,15 +71,26 @@ export const authService = {
   },
   
   logout: async () => {
+    // Nettoyage local immédiat
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    Cookies.remove('access_token');
+    Cookies.remove('refresh_token');
+    
+    // Tentative de déconnexion serveur (optionnelle, ignore l'erreur)
     try {
-      await api.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      Cookies.remove('access_token');
-      Cookies.remove('refresh_token');
+      await api.post('/auth/logout', {}, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+    } catch (error: any) {
+      // Si erreur 401, c'est normal car le token est déjà supprimé
+      if (error.response?.status === 401) {
+        console.log('Déconnexion locale effectuée');
+      } else {
+        console.error('Erreur lors de la déconnexion:', error.message);
+      }
     }
   },
 };
