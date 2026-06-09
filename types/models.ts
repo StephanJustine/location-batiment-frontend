@@ -83,3 +83,91 @@ export interface Paiement {
   bail?: Bail;
   locataire?: Locataire;
 }
+
+
+// src/types/models.ts (ajouts)
+export interface Garant {
+  id?: number;
+  nom: string;
+  prenom: string;
+  telephone: string;
+  email?: string;
+  adresse?: string;
+  profession?: string;
+  revenu_mensuel?: number;
+  piece_identite?: {
+    type: string;
+    numero: string;
+    fichier?: string;
+  };
+  created_at?: string;
+}
+
+export interface Locataire {
+  paiements_total: number;
+  paiements_impayes: any;
+  id: number;
+  nom: string;
+  prenom: string;
+  date_naissance?: string;
+  lieu_naissance?: string;
+  nationalite: string;
+  cin?: string;
+  passeport?: string;
+  email?: string;
+  telephone: string;
+  telephone_secondaire?: string;
+  adresse?: string;
+  profession?: string;
+  employeur?: string;
+  revenu_mensuel?: number;
+  situation_matrimoniale?: 'celibataire' | 'marie' | 'divorce' | 'veuf';
+  nombre_enfants: number;
+  pieces_jointes: PieceJointe[];
+  garants: Garant[];
+  notes?: string;
+  statut: 'actif' | 'archive' | 'blacklist';
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+  created_by?: number;
+}
+
+export interface PieceJointe {
+  id: number;
+  type: string;
+  filename: string;
+  url: string;
+  taille: number;
+  uploaded_at: string;
+}
+
+export interface LocataireDetail extends Locataire {
+  baux_actifs: BailActif[];
+  historique_logements: HistoriqueLogement[];
+  paiements_total: number;
+  paiements_impayes: number;
+  nombre_paiements: number;
+}
+
+export interface BailActif {
+  id: number;
+  numero_contrat: string;
+  logement_id: number;
+  logement_numero: string;
+  date_debut: string;
+  date_fin: string;
+  loyer_mensuel: number;
+  statut: string;
+}
+
+export interface HistoriqueLogement {
+  id: number;
+  logement_id: number;
+  logement_numero: string;
+  bail_id?: number;
+  date_debut: string;
+  date_fin?: string;
+  loyer?: number;
+  motif_depart?: string;
+}

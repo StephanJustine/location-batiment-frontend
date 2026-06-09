@@ -1,6 +1,7 @@
 import api from '@/lib/api';
 
 export interface Logement {
+  [x: string]: any;
   id: number;
   batiment_id: number;
   batiment_nom?: string;

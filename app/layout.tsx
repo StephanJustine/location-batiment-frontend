@@ -1,56 +1,81 @@
-// 'use client';
-// import { ThemeProvider } from '@mui/material/styles';
-// import CssBaseline from '@mui/material/CssBaseline';
-// import { AuthProvider } from '@/contexts/AuthContext';
-// import { theme } from './theme';
-// import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
-
-// export default function RootLayout({
-//   children,
-// }: {
-//   children: React.ReactNode;
-// }) {
-//   return (
-//     <html lang="fr">
-//       <body>
-//         <AppRouterCacheProvider>
-//           <ThemeProvider theme={theme}>
-//             <CssBaseline />
-//             <AuthProvider>{children}</AuthProvider>
-//           </ThemeProvider>
-//         </AppRouterCacheProvider>
-//       </body>
-//     </html>
-//   );
-// }
-
+// src/app/layout.tsx
 'use client';
+
+import React, { useEffect } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { theme } from './theme';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
-import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
+// Pages accessibles sans authentification
+const PUBLIC_PAGES = [
+  '/login',
+  '/forgot-password',
+  '/reset-password',
+  '/register',
+];
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  
+
   useEffect(() => {
-    // Vérifier si l'utilisateur est connecté
-    const token = localStorage.getItem('access_token');
-    const isPublicPage = pathname === '/login' || pathname === '/forgot-password';
-    
-    if (!token && !isPublicPage) {
+    if (isLoading) return;
+
+    const isPublicPage = PUBLIC_PAGES.some(page => pathname.startsWith(page));
+    const isResetPasswordPage = pathname.startsWith('/reset-password/');
+
+    if (!isAuthenticated && !isPublicPage && !isResetPasswordPage) {
       router.push('/login');
     }
-    
-    if (token && isPublicPage) {
+
+    if (isAuthenticated && (isPublicPage || isResetPasswordPage)) {
       router.push('/');
     }
-  }, [pathname, router]);
-  
+  }, [isAuthenticated, isLoading, pathname, router]);
+
+  // Afficher un indicateur de chargement
+  if (isLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ 
+            width: 40, 
+            height: 40, 
+            border: '4px solid #f3f3f3',
+            borderTop: '4px solid #1976d2',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }} />
+          <p>Chargement...</p>
+        </div>
+        <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  const isPublicPage = PUBLIC_PAGES.some(page => pathname.startsWith(page));
+  const isResetPasswordPage = pathname.startsWith('/reset-password/');
+
+  if (!isAuthenticated && !isPublicPage && !isResetPasswordPage) {
+    return null;
+  }
+
   return <>{children}</>;
 }
 
