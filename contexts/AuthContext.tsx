@@ -1,35 +1,32 @@
-// // src/contexts/AuthContext.tsx
+// // src/contexts/AuthContext.tsx - Correction du login
 // 'use client';
 
 // import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 // import { useRouter } from 'next/navigation';
-// import api from '@/lib/axios';
+// import { authService } from '@/lib/api';
 // import Cookies from 'js-cookie';
 
-// // Types
-// export interface User {
+// interface User {
 //   id: number;
 //   email: string;
 //   username: string;
-//   nom?: string;
-//   prenom?: string;
-//   role: 'admin' | 'gestionnaire' | 'agent';
+//   nom: string;
+//   prenom: string;
+//   role: string;
 // }
 
-// export interface AuthContextType {
+// interface AuthContextType {
 //   user: User | null;
 //   isLoading: boolean;
 //   isAuthenticated: boolean;
 //   login: (username: string, password: string) => Promise<void>;
 //   logout: () => Promise<void>;
-//   checkPermission: (roles: string[]) => boolean;
 //   refreshUser: () => Promise<void>;
+//   checkPermission: (roles: string[]) => boolean;
 // }
 
-// // Création du contexte
 // const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// // Hook personnalisé
 // export const useAuth = (): AuthContextType => {
 //   const context = useContext(AuthContext);
 //   if (!context) {
@@ -38,29 +35,29 @@
 //   return context;
 // };
 
-// // Provider
 // export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 //   const [user, setUser] = useState<User | null>(null);
 //   const [isLoading, setIsLoading] = useState(true);
 //   const router = useRouter();
 
-//   // Fonction pour récupérer l'utilisateur courant
 //   const refreshUser = useCallback(async () => {
 //     try {
 //       const token = localStorage.getItem('access_token') || Cookies.get('access_token');
       
 //       if (token) {
-//         const response = await api.get('/auth/me');
-//         setUser(response.data);
-//         return response.data;
+//         const userData = await authService.getCurrentUser();
+//         setUser(userData);
+//         localStorage.setItem('user', JSON.stringify(userData));
+//         return userData;
 //       }
 //       return null;
 //     } catch (error: any) {
-//       console.error('Erreur récupération utilisateur:', error);
+//       console.error('Erreur refresh user:', error?.response?.status);
+      
 //       if (error.response?.status === 401) {
-//         // Token invalide, nettoyage
 //         localStorage.removeItem('access_token');
 //         localStorage.removeItem('refresh_token');
+//         localStorage.removeItem('user');
 //         Cookies.remove('access_token');
 //         Cookies.remove('refresh_token');
 //         setUser(null);
@@ -69,7 +66,6 @@
 //     }
 //   }, []);
 
-//   // Vérification initiale de l'authentification
 //   useEffect(() => {
 //     const checkAuth = async () => {
 //       const token = localStorage.getItem('access_token') || Cookies.get('access_token');
@@ -84,91 +80,117 @@
 //     checkAuth();
 //   }, [refreshUser]);
 
-//   // Fonction de connexion
+//   // 🔥 CORRECTION : Meilleure gestion des erreurs
 //   const login = useCallback(async (username: string, password: string) => {
+//     setIsLoading(true);
+    
 //     try {
-//       setIsLoading(true);
+//       console.log('🔐 Tentative de connexion pour:', username);
       
-//       const response = await api.post('/auth/login', {
-//         username,
-//         password
-//       });
-
-//       const { access_token, refresh_token } = response.data;
-
+//       // Appeler le service de login
+//       const response = await authService.login(username, password);
+//       console.log('✅ Réponse login reçue:', response);
+      
 //       // Stocker les tokens
-//       if (access_token) {
-//         localStorage.setItem('access_token', access_token);
-//         Cookies.set('access_token', access_token, { expires: 7, secure: true, sameSite: 'strict' });
+//       if (response.access_token) {
+//         localStorage.setItem('access_token', response.access_token);
+//         Cookies.set('access_token', response.access_token, { 
+//           expires: 7, 
+//           secure: process.env.NODE_ENV === 'production',
+//           sameSite: 'strict' 
+//         });
 //       }
       
-//       if (refresh_token) {
-//         localStorage.setItem('refresh_token', refresh_token);
-//         Cookies.set('refresh_token', refresh_token, { expires: 30, secure: true, sameSite: 'strict' });
+//       if (response.refresh_token) {
+//         localStorage.setItem('refresh_token', response.refresh_token);
+//         Cookies.set('refresh_token', response.refresh_token, { 
+//           expires: 30,
+//           secure: process.env.NODE_ENV === 'production',
+//           sameSite: 'strict'
+//         });
 //       }
-
+      
 //       // Récupérer les informations utilisateur
-//       const userData = await refreshUser();
+//       const userData = await authService.getCurrentUser();
       
-//       if (!userData) {
-//         throw new Error('Impossible de récupérer les informations utilisateur');
+//       if (userData) {
+//         setUser(userData);
+//         localStorage.setItem('user', JSON.stringify(userData));
+//         console.log('👤 Utilisateur connecté:', userData.email);
 //       }
-
+      
 //       // Rediriger vers le dashboard
 //       router.push('/');
       
 //     } catch (error: any) {
-//       console.error('Erreur de connexion:', error);
-//       throw new Error(
-//         error.response?.data?.detail || 
-//         error.message || 
-//         'Erreur lors de la connexion'
-//       );
+//       console.error('❌ Erreur login complète:', error);
+//       console.error('Status:', error.response?.status);
+//       console.error('Data:', JSON.stringify(error.response?.data));
+//       console.error('Message:', error.message);
+      
+//       // 🔥 CORRECTION : Extraire le message d'erreur correctement
+//       let errorMessage = 'Erreur de connexion';
+      
+//       if (error.response?.data) {
+//         const data = error.response.data;
+        
+//         // Cas 1: Le backend renvoie { detail: "message" }
+//         if (typeof data.detail === 'string') {
+//           errorMessage = data.detail;
+//         }
+//         // Cas 2: Le backend renvoie { detail: [{ msg: "message" }] }
+//         else if (Array.isArray(data.detail)) {
+//           errorMessage = data.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
+//         }
+//         // Cas 3: Le backend renvoie { message: "message" }
+//         else if (data.message) {
+//           errorMessage = data.message;
+//         }
+//         // Cas 4: Erreur 422 validation
+//         else if (error.response.status === 422) {
+//           errorMessage = 'Erreur de validation. Vérifiez les champs.';
+//         }
+//         // Cas 5: Erreur 401
+//         else if (error.response.status === 401) {
+//           errorMessage = 'Nom d\'utilisateur ou mot de passe incorrect';
+//         }
+//       }
+      
+//       throw new Error(errorMessage);
 //     } finally {
 //       setIsLoading(false);
 //     }
 //   }, [refreshUser, router]);
 
-//   // Fonction de déconnexion
 //   const logout = useCallback(async () => {
 //     try {
-//       // Appeler l'API de déconnexion (optionnel)
-//       try {
-//         await api.post('/auth/logout');
-//       } catch {
-//         // Ignorer les erreurs de l'API de logout
-//       }
+//       await authService.logout();
+//     } catch (error) {
+//       console.error('Erreur logout:', error);
 //     } finally {
-//       // Nettoyer les tokens
 //       localStorage.removeItem('access_token');
 //       localStorage.removeItem('refresh_token');
 //       localStorage.removeItem('user');
-      
 //       Cookies.remove('access_token');
 //       Cookies.remove('refresh_token');
-      
 //       setUser(null);
-      
-//       // Rediriger vers la page de connexion
 //       router.push('/login');
 //     }
 //   }, [router]);
 
-//   // Vérifier les permissions
 //   const checkPermission = useCallback((roles: string[]) => {
 //     if (!user) return false;
 //     return roles.includes(user.role);
 //   }, [user]);
 
-//   // Valeur du contexte
 //   const value: AuthContextType = {
 //     user,
 //     isLoading,
-//     isAuthenticated: Boolean(user),
+//     isAuthenticated: !!user,
 //     login,
 //     logout,
-//     checkPermission,
-//     refreshUser
+//     refreshUser,
+//     checkPermission
 //   };
 
 //   return (
@@ -180,9 +202,7 @@
 
 // export default AuthContext;
 
-
-
-// src/contexts/AuthContext.tsx - Correction du login
+// src/contexts/AuthContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -191,19 +211,12 @@ import { authService } from '@/lib/api';
 import Cookies from 'js-cookie';
 
 interface User {
-  id: number;
-  email: string;
-  username: string;
-  nom: string;
-  prenom: string;
-  role: string;
+  id: number; email: string; username: string; nom: string; prenom: string; role: string;
 }
 
 interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  user: User | null; isLoading: boolean; isAuthenticated: boolean;
+  login: (u: string, p: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   checkPermission: (roles: string[]) => boolean;
@@ -212,173 +225,85 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth doit être utilisé à l\'intérieur d\'un AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth doit être utilisé dans AuthProvider');
+  return ctx;
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const clearAuth = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    Cookies.remove('access_token');
+    Cookies.remove('refresh_token');
+    setUser(null);
+  };
+
   const refreshUser = useCallback(async () => {
+    const token = localStorage.getItem('access_token') || Cookies.get('access_token');
+    if (!token) { setLoading(false); return null; }
     try {
-      const token = localStorage.getItem('access_token') || Cookies.get('access_token');
-      
-      if (token) {
-        const userData = await authService.getCurrentUser();
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-        return userData;
-      }
+      const data = await authService.getCurrentUser();
+      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data));
+      return data;
+    } catch (e: any) {
+      if (e.response?.status === 401) clearAuth();
       return null;
-    } catch (error: any) {
-      console.error('Erreur refresh user:', error?.response?.status);
-      
-      if (error.response?.status === 401) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        Cookies.remove('access_token');
-        Cookies.remove('refresh_token');
-        setUser(null);
-      }
-      return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('access_token') || Cookies.get('access_token');
-      
-      if (token) {
-        await refreshUser();
-      }
-      
-      setIsLoading(false);
-    };
-    
-    checkAuth();
-  }, [refreshUser]);
+  useEffect(() => { refreshUser(); }, [refreshUser]);
 
-  // 🔥 CORRECTION : Meilleure gestion des erreurs
+// src/contexts/AuthContext.tsx - Correction du login
   const login = useCallback(async (username: string, password: string) => {
-    setIsLoading(true);
-    
+    setLoading(true);
     try {
-      console.log('🔐 Tentative de connexion pour:', username);
+      console.log('🔐 AuthContext login:', username);
+      const res = await authService.login(username, password);
       
-      // Appeler le service de login
-      const response = await authService.login(username, password);
-      console.log('✅ Réponse login reçue:', response);
-      
-      // Stocker les tokens
-      if (response.access_token) {
-        localStorage.setItem('access_token', response.access_token);
-        Cookies.set('access_token', response.access_token, { 
-          expires: 7, 
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict' 
-        });
-      }
-      
-      if (response.refresh_token) {
-        localStorage.setItem('refresh_token', response.refresh_token);
-        Cookies.set('refresh_token', response.refresh_token, { 
-          expires: 30,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
-      }
-      
-      // Récupérer les informations utilisateur
+      // Récupérer l'utilisateur
       const userData = await authService.getCurrentUser();
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
       
-      if (userData) {
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-        console.log('👤 Utilisateur connecté:', userData.email);
-      }
-      
-      // Rediriger vers le dashboard
       router.push('/');
+    } catch (e: any) {
+      console.error('❌ Login error:', e);
       
-    } catch (error: any) {
-      console.error('❌ Erreur login complète:', error);
-      console.error('Status:', error.response?.status);
-      console.error('Data:', JSON.stringify(error.response?.data));
-      console.error('Message:', error.message);
+      // Extraire le message d'erreur
+      let msg = 'Erreur de connexion';
+      const detail = e.response?.data?.detail;
       
-      // 🔥 CORRECTION : Extraire le message d'erreur correctement
-      let errorMessage = 'Erreur de connexion';
-      
-      if (error.response?.data) {
-        const data = error.response.data;
-        
-        // Cas 1: Le backend renvoie { detail: "message" }
-        if (typeof data.detail === 'string') {
-          errorMessage = data.detail;
-        }
-        // Cas 2: Le backend renvoie { detail: [{ msg: "message" }] }
-        else if (Array.isArray(data.detail)) {
-          errorMessage = data.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
-        }
-        // Cas 3: Le backend renvoie { message: "message" }
-        else if (data.message) {
-          errorMessage = data.message;
-        }
-        // Cas 4: Erreur 422 validation
-        else if (error.response.status === 422) {
-          errorMessage = 'Erreur de validation. Vérifiez les champs.';
-        }
-        // Cas 5: Erreur 401
-        else if (error.response.status === 401) {
-          errorMessage = 'Nom d\'utilisateur ou mot de passe incorrect';
-        }
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        msg = detail.map((d: any) => d.msg || '').filter(Boolean).join(', ');
       }
       
-      throw new Error(errorMessage);
+      throw new Error(msg || 'Erreur de connexion');
     } finally {
-      setIsLoading(false);
-    }
-  }, [refreshUser, router]);
-
-  const logout = useCallback(async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error('Erreur logout:', error);
-    } finally {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-      Cookies.remove('access_token');
-      Cookies.remove('refresh_token');
-      setUser(null);
-      router.push('/login');
+      setLoading(false);
     }
   }, [router]);
 
-  const checkPermission = useCallback((roles: string[]) => {
-    if (!user) return false;
-    return roles.includes(user.role);
-  }, [user]);
+  const logout = useCallback(async () => {
+    authService.logout();
+    clearAuth();
+    router.push('/login');
+  }, [router]);
 
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    login,
-    logout,
-    refreshUser,
-    checkPermission
-  };
+  const checkPermission = useCallback((roles: string[]) => user ? roles.includes(user.role) : false, [user]);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, isLoading: loading, isAuthenticated: !!user, login, logout, refreshUser, checkPermission }}>
       {children}
     </AuthContext.Provider>
   );
