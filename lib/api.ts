@@ -115,4 +115,13 @@ export const dashboardService = {
 
 };
 
+// src/lib/api.ts - Vérifiez que ces exports existent
+export const notificationService = {
+  getAll: async () => { try { return (await api.get('/notifications/')).data; } catch { return []; } },
+  getUnread: async () => { try { return (await api.get('/notifications/unread')).data; } catch { return []; } },
+  getHistorique: async (limit = 5) => { try { return (await api.get(`/notifications/historique?limit=${limit}`)).data; } catch { return []; } },
+  markAsRead: async (id: number) => { try { await api.post(`/notifications/${id}/read`); } catch {} },
+  markAllAsRead: async () => { try { await api.post('/notifications/read-all'); } catch {} },
+};
+
 export default api;
