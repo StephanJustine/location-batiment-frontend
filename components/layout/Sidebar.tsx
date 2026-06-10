@@ -1,560 +1,3 @@
-// 'use client';
-// import { useState } from 'react';
-// import {
-//   Drawer,
-//   List,
-//   ListItem,
-//   ListItemButton,
-//   ListItemIcon,
-//   ListItemText,
-//   Toolbar,
-//   Box,
-//   Typography,
-//   Divider,
-//   Collapse,
-//   Avatar,
-//   Badge,
-//   alpha,
-// } from '@mui/material';
-// import {
-//   Dashboard as DashboardIcon,
-//   Apartment as ApartmentIcon,
-//   Home as HomeIcon,
-//   People as PeopleIcon,
-//   Payment as PaymentIcon,
-//   Assessment as AssessmentIcon,
-//   Notifications as NotificationsIcon,
-//   Settings as SettingsIcon,
-//   Logout as LogoutIcon,
-//   ExpandLess,
-//   ExpandMore,
-//   Receipt as ReceiptIcon,
-//   Warning as WarningIcon,
-//   Security as SecurityIcon,
-// } from '@mui/icons-material';
-// import Link from 'next/link';
-// import { usePathname, useRouter } from 'next/navigation';
-// import { useAuth } from '@/contexts/AuthContext';
-
-// const drawerWidth = 280;
-
-// const menuItems = [
-//   { text: 'Tableau de bord', icon: <DashboardIcon />, path: '/', iconBg: '#e8f5e9' },
-//   { 
-//     text: 'Gestion des biens', icon: <ApartmentIcon />, iconBg: '#e3f2fd',
-//     children: [
-//       { text: 'Bâtiments', icon: <ApartmentIcon />, path: '/batiments' },
-//       { text: 'Logements', icon: <HomeIcon />, path: '/logements' },
-//     ]
-//   },
-//   { 
-//     text: 'Gestion locative', icon: <PeopleIcon />, iconBg: '#fce4ec',
-//     children: [
-//       { text: 'Locataires', icon: <PeopleIcon />, path: '/locataires' },
-//       { text: 'Baux', icon: <ReceiptIcon />, path: '/baux' },
-//     ]
-//   },
-//   { 
-//     text: 'Finances', icon: <PaymentIcon />, iconBg: '#fff3e0',
-//     children: [
-//       { text: 'Paiements', icon: <PaymentIcon />, path: '/paiements' },
-//       { text: 'Impayés', icon: <WarningIcon />, path: '/impayes' },
-//       { text: 'Rapports', icon: <AssessmentIcon />, path: '/rapports' },
-//     ]
-//   },
-//   { 
-//     text: 'Paramètres', icon: <SettingsIcon />, iconBg: '#f3e5f5',
-//     children: [
-//       { text: 'Profil', icon: <SecurityIcon />, path: '/profil' },
-//       { text: 'Notifications', icon: <NotificationsIcon />, path: '/notifications' },
-//     ]
-//   },
-// ];
-
-// export default function Sidebar() {
-//   const pathname = usePathname();
-//   const router = useRouter();
-//   const { user, logout } = useAuth();
-//   const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
-
-//   const handleMenuClick = (text: string) => {
-//     setOpenMenus((prev) => ({ ...prev, [text]: !prev[text] }));
-//   };
-
-//   const handleLogout = async () => {
-//     await logout();
-//     router.push('/login');
-//   };
-
-//   const isActive = (path?: string) => pathname === path;
-//   const isParentActive = (children: any[]) => children.some(child => pathname === child.path);
-
-//   return (
-//     <Drawer
-//       variant="permanent"
-//       sx={{
-//         width: drawerWidth,
-//         flexShrink: 0,
-//         [`& .MuiDrawer-paper`]: {
-//           width: drawerWidth,
-//           boxSizing: 'border-box',
-//           backgroundColor: '#1a1a1a',
-//           borderRight: 'none',
-//           boxShadow: '4px 0 20px rgba(0,0,0,0.08)',
-//         },
-//       }}
-//     >
-//       <Toolbar sx={{ backgroundColor: '#2e7d32', py: 2, minHeight: '80px !important' }}>
-//         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-//           <Avatar sx={{ bgcolor: '#ffffff', width: 45, height: 45 }}>
-//             <ApartmentIcon sx={{ color: '#2e7d32', fontSize: 28 }} />
-//           </Avatar>
-//           <Box>
-//             <Typography variant="h6" sx={{ color: '#ffffff', fontWeight: 700, fontSize: '1.1rem' }}>
-//               Gestion Locative
-//             </Typography>
-//             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-//               Madagascar
-//             </Typography>
-//           </Box>
-//         </Box>
-//       </Toolbar>
-
-//       <Box sx={{ p: 3, backgroundColor: '#252525', mx: 2, my: 2, borderRadius: 3 }}>
-//         <Badge
-//           overlap="circular"
-//           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-//           variant="dot"
-//           sx={{ '& .MuiBadge-badge': { backgroundColor: '#4caf50' } }}
-//         >
-//           <Avatar sx={{ bgcolor: '#2e7d32', width: 50, height: 50 }}>
-//             <PeopleIcon />
-//           </Avatar>
-//         </Badge>
-//         <Box sx={{ mt: 1 }}>
-//           <Typography variant="body2" sx={{ color: '#ffffff', fontWeight: 600 }}>
-//             {user?.nom} {user?.prenom}
-//           </Typography>
-//           <Typography variant="caption" sx={{ color: '#a5d6a7', fontSize: '0.7rem' }}>
-//             {user?.role === 'admin' ? 'Administrateur' : 'Gestionnaire'}
-//           </Typography>
-//         </Box>
-//       </Box>
-
-//       <Box sx={{ overflow: 'auto', px: 2 }}>
-//         <List>
-//           {menuItems.map((item) => (
-//             <Box key={item.text}>
-//               {item.children ? (
-//                 <>
-//                   <ListItem disablePadding sx={{ mb: 0.5 }}>
-//                     <ListItemButton
-//                       onClick={() => handleMenuClick(item.text)}
-//                       sx={{
-//                         borderRadius: 2,
-//                         backgroundColor: openMenus[item.text] || isParentActive(item.children) 
-//                           ? alpha('#2e7d32', 0.1) : 'transparent',
-//                         '&:hover': { backgroundColor: alpha('#2e7d32', 0.15) },
-//                       }}
-//                     >
-//                       <ListItemIcon sx={{ 
-//                         color: openMenus[item.text] || isParentActive(item.children) ? '#2e7d32' : '#a0a0a0',
-//                         minWidth: 40
-//                       }}>
-//                         {item.icon}
-//                       </ListItemIcon>
-//                       <ListItemText 
-//                         primary={item.text}
-//                         sx={{
-//                           '& .MuiListItemText-primary': {
-//                             color: '#ffffff',
-//                             fontWeight: openMenus[item.text] || isParentActive(item.children) ? 600 : 400,
-//                             fontSize: '0.9rem'
-//                           }
-//                         }}
-//                       />
-//                       {openMenus[item.text] ? <ExpandLess sx={{ color: '#a0a0a0' }} /> : <ExpandMore sx={{ color: '#a0a0a0' }} />}
-//                     </ListItemButton>
-//                   </ListItem>
-//                   <Collapse in={openMenus[item.text]} timeout="auto">
-//                     <List component="div" disablePadding>
-//                       {item.children.map((child) => (
-//                         <ListItemButton
-//                           key={child.text}
-//                           component={Link}
-//                           href={child.path || '#'}
-//                           sx={{
-//                             pl: 6,
-//                             borderRadius: 2,
-//                             ml: 2,
-//                             mb: 0.5,
-//                             backgroundColor: isActive(child.path) ? alpha('#2e7d32', 0.15) : 'transparent',
-//                             '&:hover': { backgroundColor: alpha('#2e7d32', 0.1) },
-//                           }}
-//                         >
-//                           <ListItemIcon sx={{ 
-//                             color: isActive(child.path) ? '#2e7d32' : '#a0a0a0',
-//                             minWidth: 35
-//                           }}>
-//                             {child.icon}
-//                           </ListItemIcon>
-//                           <ListItemText 
-//                             primary={child.text}
-//                             sx={{
-//                               '& .MuiListItemText-primary': {
-//                                 color: isActive(child.path) ? '#ffffff' : '#c0c0c0',
-//                                 fontWeight: isActive(child.path) ? 600 : 400,
-//                                 fontSize: '0.85rem'
-//                               }
-//                             }}
-//                           />
-//                         </ListItemButton>
-//                       ))}
-//                     </List>
-//                   </Collapse>
-//                 </>
-//               ) : (
-//                 <ListItem disablePadding sx={{ mb: 0.5 }}>
-//                   <ListItemButton
-//                     component={Link}
-//                     href={item.path || '#'}
-//                     sx={{
-//                       borderRadius: 2,
-//                       backgroundColor: isActive(item.path) ? alpha('#2e7d32', 0.15) : 'transparent',
-//                       '&:hover': { backgroundColor: alpha('#2e7d32', 0.1) },
-//                     }}
-//                   >
-//                     <ListItemIcon sx={{ color: isActive(item.path) ? '#2e7d32' : '#a0a0a0', minWidth: 40 }}>
-//                       {item.icon}
-//                     </ListItemIcon>
-//                     <ListItemText 
-//                       primary={item.text}
-//                       sx={{
-//                         '& .MuiListItemText-primary': {
-//                           color: '#ffffff',
-//                           fontWeight: isActive(item.path) ? 600 : 400,
-//                           fontSize: '0.9rem'
-//                         }
-//                       }}
-//                     />
-//                   </ListItemButton>
-//                 </ListItem>
-//               )}
-//             </Box>
-//           ))}
-//         </List>
-
-//         <Divider sx={{ my: 2, backgroundColor: '#333' }} />
-
-//         <List>
-//           <ListItem disablePadding>
-//             <ListItemButton onClick={handleLogout} sx={{ borderRadius: 2 }}>
-//               <ListItemIcon sx={{ color: '#f44336', minWidth: 40 }}>
-//                 <LogoutIcon />
-//               </ListItemIcon>
-//               <ListItemText 
-//                 primary="Déconnexion"
-//                 sx={{ '& .MuiListItemText-primary': { color: '#f44336', fontWeight: 500, fontSize: '0.9rem' } }}
-//               />
-//             </ListItemButton>
-//           </ListItem>
-//         </List>
-//       </Box>
-//     </Drawer>
-//   );
-// }
-
-
-// 'use client';
-// import { useState } from 'react';
-// import {
-//   Drawer,
-//   List,
-//   ListItem,
-//   ListItemButton,
-//   ListItemIcon,
-//   ListItemText,
-//   Toolbar,
-//   Box,
-//   Typography,
-//   Divider,
-//   Collapse,
-//   Avatar,
-//   Badge,
-//   alpha,
-// } from '@mui/material';
-// import {
-//   Dashboard as DashboardIcon,
-//   Apartment as ApartmentIcon,
-//   Home as HomeIcon,
-//   People as PeopleIcon,
-//   Payment as PaymentIcon,
-//   Assessment as AssessmentIcon,
-//   Notifications as NotificationsIcon,
-//   Settings as SettingsIcon,
-//   Logout as LogoutIcon,
-//   ExpandLess,
-//   ExpandMore,
-//   Receipt as ReceiptIcon,
-//   Warning as WarningIcon,
-//   Security as SecurityIcon,
-// } from '@mui/icons-material';
-// import Link from 'next/link';
-// import { usePathname, useRouter } from 'next/navigation';
-// import { useAuth } from '@/contexts/AuthContext';
-
-// const drawerWidth = 280;
-
-// const menuItems = [
-//   { text: 'Tableau de bord', icon: <DashboardIcon />, path: '/' },
-//   { 
-//     text: 'Gestion des biens', icon: <ApartmentIcon />,
-//     children: [
-//       { text: 'Bâtiments', icon: <ApartmentIcon />, path: '/batiments' },
-//       { text: 'Logements', icon: <HomeIcon />, path: '/logements' },
-//     ]
-//   },
-//   { 
-//     text: 'Gestion locative', icon: <PeopleIcon />,
-//     children: [
-//       { text: 'Locataires', icon: <PeopleIcon />, path: '/locataires' },
-//       { text: 'Baux', icon: <ReceiptIcon />, path: '/baux' },
-//     ]
-//   },
-//   { 
-//     text: 'Finances', icon: <PaymentIcon />,
-//     children: [
-//       { text: 'Paiements', icon: <PaymentIcon />, path: '/paiements' },
-//       { text: 'Impayés', icon: <WarningIcon />, path: '/impayes' },
-//       { text: 'Rapports', icon: <AssessmentIcon />, path: '/rapports' },
-//     ]
-//   },
-//   { 
-//     text: 'Paramètres', icon: <SettingsIcon />,
-//     children: [
-//       { text: 'Profil', icon: <SecurityIcon />, path: '/profil' },
-//       { text: 'Notifications', icon: <NotificationsIcon />, path: '/notifications' },
-//     ]
-//   },
-// ];
-
-// export default function Sidebar() {
-//   const pathname = usePathname();
-//   const router = useRouter();
-//   const { user, logout } = useAuth();
-//   const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
-
-//   const handleMenuClick = (text: string) => {
-//     setOpenMenus((prev) => ({ ...prev, [text]: !prev[text] }));
-//   };
-
-//   const handleLogout = async () => {
-//     await logout();
-//     router.push('/login');
-//   };
-
-//   const isActive = (path?: string) => pathname === path;
-//   const isParentActive = (children: any[]) => children.some(child => pathname === child.path);
-
-//   return (
-//     <Drawer
-//       variant="permanent"
-//       sx={{
-//         width: drawerWidth,
-//         flexShrink: 0,
-//         [`& .MuiDrawer-paper`]: {
-//           width: drawerWidth,
-//           boxSizing: 'border-box',
-//           backgroundColor: '#ffffff',
-//           borderRight: '1px solid #e8e8e8',
-//           boxShadow: 'none',
-//         },
-//       }}
-//     >
-//       {/* Header Sidebar */}
-//       <Toolbar sx={{ 
-//         backgroundColor: '#ffffff', 
-//         py: 2, 
-//         minHeight: '80px !important',
-//         borderBottom: '1px solid #e8e8e8'
-//       }}>
-//         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-//           <Avatar sx={{ bgcolor: '#e8f5e9', width: 45, height: 45 }}>
-//             <ApartmentIcon sx={{ color: '#2e7d32', fontSize: 28 }} />
-//           </Avatar>
-//           <Box>
-//             <Typography variant="h6" sx={{ color: '#1a1a1a', fontWeight: 700, fontSize: '1rem' }}>
-//               Gestion Locative
-//             </Typography>
-//             <Typography variant="caption" sx={{ color: '#9e9e9e', fontSize: '0.7rem' }}>
-//               Madagascar
-//             </Typography>
-//           </Box>
-//         </Box>
-//       </Toolbar>
-
-//       {/* Profil utilisateur */}
-//       <Box sx={{ 
-//         p: 2, 
-//         backgroundColor: '#f8f9fa', 
-//         mx: 1.5, 
-//         my: 2, 
-//         borderRadius: 2,
-//         display: 'flex',
-//         alignItems: 'center',
-//         gap: 1.5
-//       }}>
-//         <Badge
-//           overlap="circular"
-//           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-//           variant="dot"
-//           sx={{ '& .MuiBadge-badge': { backgroundColor: '#4caf50' } }}
-//         >
-//           <Avatar sx={{ bgcolor: '#e8f5e9', width: 45, height: 45 }}>
-//             <PeopleIcon sx={{ color: '#2e7d32' }} />
-//           </Avatar>
-//         </Badge>
-//         <Box>
-//           <Typography variant="body2" sx={{ color: '#1a1a1a', fontWeight: 600 }}>
-//             {user?.nom} {user?.prenom}
-//           </Typography>
-//           <Typography variant="caption" sx={{ color: '#2e7d32', fontSize: '0.7rem', fontWeight: 500 }}>
-//             {user?.role === 'admin' ? 'Administrateur' : 'Gestionnaire'}
-//           </Typography>
-//         </Box>
-//       </Box>
-
-//       {/* Menu de navigation */}
-//       <Box sx={{ overflow: 'auto', px: 1.5 }}>
-//         <List>
-//           {menuItems.map((item) => (
-//             <Box key={item.text}>
-//               {item.children ? (
-//                 <>
-//                   <ListItem disablePadding sx={{ mb: 0.5 }}>
-//                     <ListItemButton
-//                       onClick={() => handleMenuClick(item.text)}
-//                       sx={{
-//                         borderRadius: 1.5,
-//                         backgroundColor: openMenus[item.text] || isParentActive(item.children) 
-//                           ? alpha('#2e7d32', 0.08) : 'transparent',
-//                         '&:hover': { backgroundColor: alpha('#2e7d32', 0.05) },
-//                       }}
-//                     >
-//                       <ListItemIcon sx={{ 
-//                         color: openMenus[item.text] || isParentActive(item.children) ? '#2e7d32' : '#757575',
-//                         minWidth: 40
-//                       }}>
-//                         {item.icon}
-//                       </ListItemIcon>
-//                       <ListItemText 
-//                         primary={item.text}
-//                         sx={{
-//                           '& .MuiListItemText-primary': {
-//                             color: '#1a1a1a',
-//                             fontWeight: openMenus[item.text] || isParentActive(item.children) ? 600 : 400,
-//                             fontSize: '0.85rem'
-//                           }
-//                         }}
-//                       />
-//                       {openMenus[item.text] ? 
-//                         <ExpandLess sx={{ color: '#757575', fontSize: 18 }} /> : 
-//                         <ExpandMore sx={{ color: '#757575', fontSize: 18 }} />
-//                       }
-//                     </ListItemButton>
-//                   </ListItem>
-//                   <Collapse in={openMenus[item.text]} timeout="auto">
-//                     <List component="div" disablePadding>
-//                       {item.children.map((child) => (
-//                         <ListItemButton
-//                           key={child.text}
-//                           component={Link}
-//                           href={child.path || '#'}
-//                           sx={{
-//                             pl: 5.5,
-//                             borderRadius: 1.5,
-//                             ml: 1.5,
-//                             mb: 0.5,
-//                             backgroundColor: isActive(child.path) ? alpha('#2e7d32', 0.08) : 'transparent',
-//                             '&:hover': { backgroundColor: alpha('#2e7d32', 0.05) },
-//                           }}
-//                         >
-//                           <ListItemIcon sx={{ 
-//                             color: isActive(child.path) ? '#2e7d32' : '#9e9e9e',
-//                             minWidth: 35
-//                           }}>
-//                             {child.icon}
-//                           </ListItemIcon>
-//                           <ListItemText 
-//                             primary={child.text}
-//                             sx={{
-//                               '& .MuiListItemText-primary': {
-//                                 color: isActive(child.path) ? '#1a1a1a' : '#757575',
-//                                 fontWeight: isActive(child.path) ? 600 : 400,
-//                                 fontSize: '0.8rem'
-//                               }
-//                             }}
-//                           />
-//                         </ListItemButton>
-//                       ))}
-//                     </List>
-//                   </Collapse>
-//                 </>
-//               ) : (
-//                 <ListItem disablePadding sx={{ mb: 0.5 }}>
-//                   <ListItemButton
-//                     component={Link}
-//                     href={item.path || '#'}
-//                     sx={{
-//                       borderRadius: 1.5,
-//                       backgroundColor: isActive(item.path) ? alpha('#2e7d32', 0.08) : 'transparent',
-//                       '&:hover': { backgroundColor: alpha('#2e7d32', 0.05) },
-//                     }}
-//                   >
-//                     <ListItemIcon sx={{ 
-//                       color: isActive(item.path) ? '#2e7d32' : '#757575', 
-//                       minWidth: 40 
-//                     }}>
-//                       {item.icon}
-//                     </ListItemIcon>
-//                     <ListItemText 
-//                       primary={item.text}
-//                       sx={{
-//                         '& .MuiListItemText-primary': {
-//                           color: '#1a1a1a',
-//                           fontWeight: isActive(item.path) ? 600 : 400,
-//                           fontSize: '0.85rem'
-//                         }
-//                       }}
-//                     />
-//                   </ListItemButton>
-//                 </ListItem>
-//               )}
-//             </Box>
-//           ))}
-//         </List>
-
-//         <Divider sx={{ my: 2, backgroundColor: '#e8e8e8' }} />
-
-//         {/* Déconnexion */}
-//         <List>
-//           <ListItem disablePadding>
-//             <ListItemButton onClick={handleLogout} sx={{ borderRadius: 1.5 }}>
-//               <ListItemIcon sx={{ color: '#f44336', minWidth: 40 }}>
-//                 <LogoutIcon />
-//               </ListItemIcon>
-//               <ListItemText 
-//                 primary="Déconnexion"
-//                 sx={{ '& .MuiListItemText-primary': { color: '#f44336', fontWeight: 500, fontSize: '0.85rem' } }}
-//               />
-//             </ListItemButton>
-//           </ListItem>
-//         </List>
-//       </Box>
-//     </Drawer>
-//   );
-// }
-
 'use client';
 import { useState } from 'react';
 import {
@@ -590,6 +33,7 @@ import {
   Warning as WarningIcon,
   ChevronLeft as ChevronLeftIcon,
   Menu as MenuIcon,
+  Description as DescriptionIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -602,6 +46,41 @@ interface SidebarProps {
   mobileOpen?: boolean;
   onClose?: () => void;
 }
+
+// const menuItems = [
+//   { text: 'Accueil', icon: <DashboardIcon />, path: '/' },
+//   { 
+//     text: 'Biens', icon: <ApartmentIcon />,
+//     children: [
+//       { text: 'Bâtiments', icon: <ApartmentIcon />, path: '/batiments' },
+//       { text: 'Logements', icon: <HomeIcon />, path: '/logements' },
+//     ]
+//   },
+//   { 
+//     text: 'Locataires', icon: <PeopleIcon />,
+//     children: [
+//       { text: 'Locataires', icon: <PeopleIcon />, path: '/locataires' },
+//       { text: 'Baux', icon: <ReceiptIcon />, path: '/baux' },
+//     ]
+//   },
+//   { 
+//     text: 'Finances', icon: <PaymentIcon />,
+//     children: [
+//       { text: 'Paiements', icon: <PaymentIcon />, path: '/paiements' },
+//       { text: 'Impayés', icon: <WarningIcon />, path: '/impayes' },
+//       { text: 'Rapports', icon: <AssessmentIcon />, path: '/rapports' },
+//     ]
+//   },
+//   { 
+//     text: 'Config', icon: <SettingsIcon />,
+//     children: [
+//       { text: 'Profil', icon: <SettingsIcon />, path: '/profil' },
+//       { text: 'Notifications', icon: <NotificationsIcon />, path: '/notifications' },
+//     ]
+//   },
+// ];
+
+// src/components/layout/Sidebar.tsx - Ajouter Contrats dans le menu
 
 const menuItems = [
   { text: 'Accueil', icon: <DashboardIcon />, path: '/' },
@@ -617,6 +96,7 @@ const menuItems = [
     children: [
       { text: 'Locataires', icon: <PeopleIcon />, path: '/locataires' },
       { text: 'Baux', icon: <ReceiptIcon />, path: '/baux' },
+      { text: 'Contrats', icon: <DescriptionIcon />, path: '/contrats' }, // 🔥 Ajouté
     ]
   },
   { 

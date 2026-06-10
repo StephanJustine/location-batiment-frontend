@@ -20,6 +20,7 @@ import { bailService } from '@/services/bailService';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
+import ContratSection from '@/components/baux/ContratSection';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
 const getImageUrl = (path: string | null | undefined): string => {
@@ -297,8 +298,11 @@ export default function BailDetailPage() {
                 </Card>
               )}
 
+              {/* Contrat PDF */}
+              <ContratSection bailId={id} contratPdfUrl={d.contrat_pdf_url} onGenerate={() => bailService.getById(id).then(setD)} />
+                
               {/* Contrat PDF + Impression */}
-              <Card sx={{ borderRadius: 2.5, border: '1px solid #e8edf2', boxShadow: 'none' }}>
+              {/* <Card sx={{ borderRadius: 2.5, border: '1px solid #e8edf2', boxShadow: 'none' }}>
                 <CardContent sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Avatar sx={{ width: 44, height: 44, bgcolor: '#e8f5e9' }}><PictureAsPdf sx={{ color: '#2e7d32' }} /></Avatar>
@@ -325,7 +329,7 @@ export default function BailDetailPage() {
                     )}
                   </Stack>
                 </CardContent>
-              </Card>
+              </Card> */}
             </Box>
           )}
 
