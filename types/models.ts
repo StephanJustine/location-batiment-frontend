@@ -64,53 +64,54 @@ export interface Paiement {
   locataire?: Locataire;
 }
 
-
-// src/types/models.ts (ajouts)
+// src/types/models.ts
 export interface Garant {
   id?: number;
   nom: string;
   prenom: string;
   telephone: string;
-  email?: string;
-  adresse?: string;
-  profession?: string;
-  revenu_mensuel?: number;
-  piece_identite?: {
-    type: string;
-    numero: string;
-    fichier?: string;
-  };
+  email?: string | null;
+  adresse?: string | null;
+  profession?: string | null;
+  revenu_mensuel?: number | null;
+  piece_identite?: Record<string, any> | null;
   created_at?: string;
 }
 
 export interface Locataire {
-  paiements_total: number;
-  paiements_impayes: any;
   id: number;
   nom: string;
   prenom: string;
-  date_naissance?: string;
-  lieu_naissance?: string;
-  nationalite: string;
-  cin?: string;
-  passeport?: string;
-  email?: string;
+  date_naissance?: string | null;
+  lieu_naissance?: string | null;
+  nationalite?: string;
+  cin?: string | null;
+  passeport?: string | null;
+  email?: string | null;
   telephone: string;
-  telephone_secondaire?: string;
-  adresse?: string;
-  profession?: string;
-  employeur?: string;
-  revenu_mensuel?: number;
-  situation_matrimoniale?: 'celibataire' | 'marie' | 'divorce' | 'veuf';
-  nombre_enfants: number;
-  pieces_jointes: PieceJointe[];
-  garants: Garant[];
-  notes?: string;
-  statut: 'actif' | 'archive' | 'blacklist';
+  telephone_secondaire?: string | null;
+  adresse?: string | null;
+  profession?: string | null;
+  employeur?: string | null;
+  revenu_mensuel?: number | null;
+  situation_matrimoniale?: string | null;
+  nombre_enfants?: number;
+  nombre_personnes?: number;
+  notes?: string | null;
+  statut: string;
   is_active: boolean;
   created_at: string;
-  updated_at?: string;
-  created_by?: number;
+  updated_at?: string | null;
+  garants?: Garant[];
+  pieces_jointes?: any[];
+}
+
+export interface LocataireDetail extends Locataire {
+  baux_actifs: any[];
+  historique_logements: any[];
+  paiements_total: number;
+  paiements_impayes: number;
+  nombre_paiements: number;
 }
 
 export interface PieceJointe {
@@ -120,14 +121,6 @@ export interface PieceJointe {
   url: string;
   taille: number;
   uploaded_at: string;
-}
-
-export interface LocataireDetail extends Locataire {
-  baux_actifs: BailActif[];
-  historique_logements: HistoriqueLogement[];
-  paiements_total: number;
-  paiements_impayes: number;
-  nombre_paiements: number;
 }
 
 export interface BailActif {

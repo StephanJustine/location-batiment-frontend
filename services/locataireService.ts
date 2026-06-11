@@ -19,6 +19,7 @@ interface LocataireCreate {
   revenu_mensuel?: number | null;
   situation_matrimoniale?: string | null;
   nombre_enfants?: number;
+  nombre_personnes?: number;
   pieces_jointes?: Array<Record<string, any>>;
   garants?: Array<{
     nom: string;
@@ -42,34 +43,23 @@ interface LocataireFilters {
 }
 
 export const locataireService = {
-  // async getLocataires(filters?: LocataireFilters) {
-  //   const { data } = await api.get<Locataire[]>('/locataires/', { params: filters });
-  //   return data;
-  // },
-
-  // src/services/locataireService.ts
   async getLocataires(filters?: LocataireFilters) {
     const params: Record<string, any> = {};
-    
     if (filters?.skip !== undefined) params.skip = filters.skip;
-    if (filters?.limit !== undefined) params.limit = Math.min(filters.limit, 200); // 🔥 Max 200
+    if (filters?.limit !== undefined) params.limit = Math.min(filters.limit, 200);
     if (filters?.search) params.search = filters.search;
     if (filters?.statut) params.statut = filters.statut;
     if (filters?.is_active !== undefined) params.is_active = filters.is_active;
-    
     const { data } = await api.get<Locataire[]>('/locataires/', { params });
     return data;
   },
 
-  // 🔥 Nouvelle méthode pour les stats globales
   async getAllStats() {
-    // Récupérer par statut (max 200 chacun)
     const [actifs, archives, blacklist] = await Promise.all([
       this.getLocataires({ skip: 0, limit: 200, statut: 'actif' }),
       this.getLocataires({ skip: 0, limit: 200, statut: 'archive' }),
       this.getLocataires({ skip: 0, limit: 200, statut: 'blacklist' })
     ]);
-    
     return {
       total: actifs.length + archives.length + blacklist.length,
       actifs: actifs.length,
@@ -83,100 +73,127 @@ export const locataireService = {
     return data;
   },
 
-  // src/services/locataireService.ts - Méthode createLocataire
+  async createLocataire(formData: any, garants: Garant[] = []) {
+    const formatDate = (d: string | null | undefined): string | null => {
+      if (!d) return null;
+      if (d.includes('T')) return d;
+      if (d.match(/^\d{4}-\d{2}-\d{2}$/)) return `${d}T00:00:00`;
+      return d;
+    };
 
-async createLocataire(formData: any) {
-  // Formater la date
-  const formatDate = (d: string | null | undefined): string | null => {
-    if (!d) return null;
-    if (d.includes('T')) return d;
-    if (d.match(/^\d{4}-\d{2}-\d{2}$/)) return `${d}T00:00:00`;
-    return d;
-  };
+    const payload: Record<string, any> = {
+      nom: formData.nom || '',
+      prenom: formData.prenom || '',
+      telephone: formData.telephone || '',
+      nationalite: formData.nationalite || 'MALAGASY',
+      nombre_enfants: formData.nombre_enfants ?? 0,
+      nombre_personnes: formData.nombre_personnes ?? 1,
+    };
 
-  // Construire le payload
-  const payload: Record<string, any> = {
-    nom: formData.nom || '',
-    prenom: formData.prenom || '',
-    telephone: formData.telephone || '',
-    nationalite: formData.nationalite || 'MALAGASY',
-    nombre_enfants: formData.nombre_enfants ?? 0,
-  };
+    const optionalFields: Record<string, any> = {
+      date_naissance: formatDate(formData.date_naissance),
+      lieu_naissance: formData.lieu_naissance,
+      cin: formData.cin,
+      passeport: formData.passeport,
+      email: formData.email,
+      telephone_secondaire: formData.telephone_secondaire,
+      adresse: formData.adresse,
+      profession: formData.profession,
+      employeur: formData.employeur,
+      revenu_mensuel: formData.revenu_mensuel ? Number(formData.revenu_mensuel) : undefined,
+      situation_matrimoniale: formData.situation_matrimoniale,
+      notes: formData.notes,
+    };
 
-  // Champs optionnels - n'ajouter que s'ils ont une valeur
-  const optionalFields: Record<string, any> = {
-    date_naissance: formatDate(formData.date_naissance),
-    lieu_naissance: formData.lieu_naissance,
-    cin: formData.cin,
-    passeport: formData.passeport,
-    email: formData.email,
-    telephone_secondaire: formData.telephone_secondaire,
-    adresse: formData.adresse,
-    profession: formData.profession,
-    employeur: formData.employeur,
-    revenu_mensuel: formData.revenu_mensuel ? Number(formData.revenu_mensuel) : undefined,
-    situation_matrimoniale: formData.situation_matrimoniale,
-    notes: formData.notes,
-  };
+    Object.entries(optionalFields).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        payload[key] = value;
+      }
+    });
 
-  // Ajouter seulement les champs non vides
-  Object.entries(optionalFields).forEach(([key, value]) => {
-    if (value !== null && value !== undefined && value !== '') {
-      payload[key] = value;
+    if (garants && garants.length > 0) {
+      payload.garants = garants.map((g: any) => ({
+        nom: g.nom || '',
+        prenom: g.prenom || '',
+        telephone: g.telephone || '',
+        ...(g.email && { email: g.email }),
+        ...(g.adresse && { adresse: g.adresse }),
+        ...(g.profession && { profession: g.profession }),
+        ...(g.revenu_mensuel && { revenu_mensuel: Number(g.revenu_mensuel) }),
+        ...(g.piece_identite && { piece_identite: g.piece_identite })
+      }));
     }
-  });
 
-  // Pièces jointes
-  if (formData.pieces_jointes && formData.pieces_jointes.length > 0) {
-    payload.pieces_jointes = formData.pieces_jointes.map((p: any) => ({
-      type: p.type || 'autre',
-      filename: p.filename || '',
-      url: p.url || '',
-      taille: p.taille || 0,
-      uploaded_at: p.uploaded_at || new Date().toISOString()
-    }));
-  }
+    console.log('📤 Payload:', JSON.stringify(payload, null, 2));
+    
+    try {
+      const { data } = await api.post('/locataires/', payload);
+      return data;
+    } catch (error: any) {
+      console.error('❌ Erreur création locataire:', error.response?.data);
+      throw error;
+    }
+  },
 
-  // Garants
-  if (formData.garants && formData.garants.length > 0) {
-    payload.garants = formData.garants.map((g: any) => ({
-      nom: g.nom || '',
-      prenom: g.prenom || '',
-      telephone: g.telephone || '',
-      ...(g.email && { email: g.email }),
-      ...(g.adresse && { adresse: g.adresse }),
-      ...(g.profession && { profession: g.profession }),
-      ...(g.revenu_mensuel && { revenu_mensuel: Number(g.revenu_mensuel) }),
-      ...(g.piece_identite && { piece_identite: g.piece_identite })
-    }));
-  }
+  // async updateLocataire(id: number, formData: any) {
+  //   const payload: Record<string, any> = {};
+  //   const fields = ['nom', 'prenom', 'date_naissance', 'lieu_naissance', 'nationalite', 'cin', 'passeport',
+  //     'email', 'telephone', 'telephone_secondaire', 'adresse', 'profession', 'employeur',
+  //     'situation_matrimoniale', 'notes', 'statut', 'is_active'];
 
-  console.log('📤 Payload:', JSON.stringify(payload, null, 2));
-  
-  try {
-    const { data } = await api.post('/locataires/', payload);
-    return data;
-  } catch (error: any) {
-    console.error('❌ Erreur création locataire:', error.response?.data);
-    throw error;
-  }
-},
+  //   fields.forEach(f => {
+  //     if (formData[f] !== undefined) payload[f] = formData[f] || null;
+  //   });
+
+  //   if (formData.revenu_mensuel !== undefined) payload.revenu_mensuel = formData.revenu_mensuel ? Number(formData.revenu_mensuel) : null;
+  //   if (formData.nombre_enfants !== undefined) payload.nombre_enfants = formData.nombre_enfants ?? 0;
+  //   if (formData.nombre_personnes !== undefined) payload.nombre_personnes = formData.nombre_personnes ?? 1;
+
+  //   const { data } = await api.put<Locataire>(`/locataires/${id}`, payload);
+  //   return data;
+  // },
 
   async updateLocataire(id: number, formData: any) {
     const payload: Record<string, any> = {};
-
-    // N'inclure que les champs modifiés
-    const fields = ['nom','prenom','date_naissance','lieu_naissance','nationalite','cin','passeport',
-      'email','telephone','telephone_secondaire','adresse','profession','employeur',
-      'situation_matrimoniale','notes','statut','is_active'];
-
-    fields.forEach(f => {
-      if (formData[f] !== undefined) payload[f] = formData[f] || null;
+    
+    // Champs texte
+    const textFields = ['nom', 'prenom', 'nationalite', 'cin', 'passeport', 'email', 
+      'telephone', 'telephone_secondaire', 'adresse', 'profession', 'employeur',
+      'situation_matrimoniale', 'notes', 'statut'];
+    
+    textFields.forEach(f => {
+      if (formData[f] !== undefined && formData[f] !== '') {
+        payload[f] = formData[f];
+      }
     });
 
-    if (formData.revenu_mensuel !== undefined) payload.revenu_mensuel = formData.revenu_mensuel ? Number(formData.revenu_mensuel) : null;
-    if (formData.nombre_enfants !== undefined) payload.nombre_enfants = formData.nombre_enfants ?? 0;
+    // ✅ Formatage des dates
+    if (formData.date_naissance) {
+      // Si la date est au format YYYY-MM-DD, ajouter T00:00:00
+      const dateValue = formData.date_naissance;
+      if (dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        payload.date_naissance = `${dateValue}T00:00:00`;
+      } else {
+        payload.date_naissance = dateValue;
+      }
+    }
 
+    // Nombres
+    if (formData.revenu_mensuel !== undefined) {
+      payload.revenu_mensuel = formData.revenu_mensuel ? Number(formData.revenu_mensuel) : null;
+    }
+    if (formData.nombre_enfants !== undefined) {
+      payload.nombre_enfants = Number(formData.nombre_enfants) || 0;
+    }
+    if (formData.nombre_personnes !== undefined) {
+      payload.nombre_personnes = Number(formData.nombre_personnes) || 1;
+    }
+    if (formData.is_active !== undefined) {
+      payload.is_active = formData.is_active;
+    }
+
+    console.log('📤 Payload update:', JSON.stringify(payload, null, 2));
+    
     const { data } = await api.put<Locataire>(`/locataires/${id}`, payload);
     return data;
   },

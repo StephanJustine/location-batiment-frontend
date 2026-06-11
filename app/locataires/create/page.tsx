@@ -17,12 +17,36 @@ import GarantForm from '@/components/locataires/GarantForm';
 import { locataireService } from '@/services/locataireService';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
+import { Garant } from '@/types/models';
 
 const steps = [
   { label: 'Infos', icon: <Badge /> },
   { label: 'Garants', icon: <Group /> },
   { label: 'Validation', icon: <CheckCircle /> }
 ];
+
+interface LocataireData {
+  nom: string;
+  prenom: string;
+  telephone: string;
+  nationalite: string;
+  nombre_enfants: number;
+  nombre_personnes: number;
+  date_naissance?: string | null;
+  lieu_naissance?: string | null;
+  cin?: string | null;
+  passeport?: string | null;
+  email?: string | null;
+  telephone_secondaire?: string | null;
+  adresse?: string | null;
+  profession?: string | null;
+  employeur?: string | null;
+  revenu_mensuel?: number | null;
+  situation_matrimoniale?: string | null;
+  notes?: string | null;
+  garants: Garant[];
+  pieces_jointes: any[];
+}
 
 export default function CreateLocatairePage() {
   const router = useRouter();
@@ -31,17 +55,30 @@ export default function CreateLocatairePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [data, setData] = useState<any>({ garants: [], pieces_jointes: [] });
+  const [data, setData] = useState<LocataireData>({ 
+    garants: [], 
+    pieces_jointes: [],
+    nom: '',
+    prenom: '',
+    telephone: '',
+    nationalite: 'MALAGASY',
+    nombre_enfants: 0,
+    nombre_personnes: 1
+  });
+
+  const handleLocataireSubmit = (formData: any) => {
+    setData((prev) => ({ ...prev, ...formData }));
+    setStep(1);
+  };
 
   const submit = async () => {
     try {
       setLoading(true);
       setError('');
-      await locataireService.createLocataire(data);
-      setSuccess('Locataire créé !');
-      setTimeout(() => router.push('/locataires'), 1000);
+      await locataireService.createLocataire(data, data.garants);
+      setSuccess('Locataire créé avec succès !');
+      setTimeout(() => router.push('/locataires'), 1500);
     } catch (e: any) {
-      // 🔥 Extraction propre du message d'erreur
       const detail = e.response?.data?.detail;
       let msg = 'Erreur lors de la création';
       
@@ -69,6 +106,8 @@ export default function CreateLocatairePage() {
   const formatRevenu = (v: any) => (v != null) ? `${Number(v).toLocaleString()} Ar` : '-';
 
   const infoItems = [
+    { label: 'Nom complet', value: `${data.prenom || ''} ${data.nom || ''}` },
+    { label: 'Téléphone', value: formatValue(data.telephone) },
     { label: 'Email', value: formatValue(data.email) },
     { label: 'CIN', value: formatValue(data.cin) },
     { label: 'Nationalité', value: formatValue(data.nationalite) },
@@ -78,6 +117,7 @@ export default function CreateLocatairePage() {
     { label: 'Revenu', value: formatRevenu(data.revenu_mensuel) },
     { label: 'Situation', value: formatValue(data.situation_matrimoniale) },
     { label: 'Enfants', value: data.nombre_enfants ?? 0 },
+    { label: 'Personnes', value: data.nombre_personnes ?? 1 },
     { label: 'Adresse', value: formatValue(data.adresse) },
   ];
 
@@ -119,23 +159,29 @@ export default function CreateLocatairePage() {
             </Stepper>
           </Paper>
 
-          {/* 🔥 Toujours convertir en string avant d'afficher */}
-          {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>{String(success)}</Alert>}
-          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>{String(error)}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>{success}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
           {step === 0 && (
             <LocataireForm 
-              onSubmit={(d: any) => { setData((p: any) => ({ ...p, ...d })); setStep(1); }} 
+              onSubmit={handleLocataireSubmit} 
               onCancel={() => router.push('/locataires')} 
             />
           )}
 
           {step === 1 && (
             <>
-              <GarantForm garants={data.garants} onUpdate={(g: any) => setData((p: any) => ({ ...p, garants: g }))} />
+              <GarantForm 
+                garants={data.garants} 
+                onUpdate={(g: Garant[]) => setData((p) => ({ ...p, garants: g }))} 
+              />
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-                <Button onClick={() => setStep(0)} startIcon={<ArrowBack />} variant="outlined">Retour</Button>
-                <Button onClick={() => setStep(2)} variant="contained" endIcon={<ArrowForward />}>Suivant</Button>
+                <Button onClick={() => setStep(0)} startIcon={<ArrowBack />} variant="outlined">
+                  Retour
+                </Button>
+                <Button onClick={() => setStep(2)} variant="contained" endIcon={<ArrowForward />}>
+                  Suivant
+                </Button>
               </Box>
             </>
           )}
@@ -178,13 +224,15 @@ export default function CreateLocatairePage() {
                   {data.notes && (
                     <Box sx={{ mt: 3, p: 2, bgcolor: '#fff8e1', borderRadius: 1.5 }}>
                       <Typography variant="caption" color="text.secondary">Notes</Typography>
-                      <Typography variant="body2">{String(data.notes)}</Typography>
+                      <Typography variant="body2">{data.notes}</Typography>
                     </Box>
                   )}
                 </CardContent>
               </Card>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Button onClick={() => setStep(1)} startIcon={<ArrowBack />} variant="outlined">Retour</Button>
+                <Button onClick={() => setStep(1)} startIcon={<ArrowBack />} variant="outlined">
+                  Retour
+                </Button>
                 <Button 
                   onClick={submit} 
                   variant="contained" 

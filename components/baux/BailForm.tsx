@@ -10,17 +10,42 @@ import { ArrowBack, Save, Home, Person } from '@mui/icons-material';
 import { locataireService } from '@/services/locataireService';
 import { logementService } from '@/services/logementService';
 
+// Helper pour formater les dates
+const formatDateForAPI = (date: string): string => {
+  if (!date) return '';
+  if (date.includes('T')) return date;
+  return `${date}T00:00:00`;
+};
+
+// Helper pour formater les dates pour l'affichage
+const formatDateForInput = (date: string): string => {
+  if (!date) return '';
+  return date.split('T')[0];
+};
+
 const schema = z.object({
-  logement_id: z.number().min(1), locataire_id: z.number().min(1),
-  date_debut: z.string().min(1), date_fin: z.string().min(1),
-  loyer_mensuel: z.number().min(1), caution_montant: z.number().min(1),
-  charges_mensuelles: z.number().min(0).default(0), frais_agence: z.number().min(0).default(0),
-  type_bail: z.string().default('habitation'), jour_paiement: z.number().min(1).max(31).default(5),
-  mode_paiement: z.string().default('virement'), clauses_specifiques: z.string().optional()
+  logement_id: z.number().min(1), 
+  locataire_id: z.number().min(1),
+  date_debut: z.string().min(1), 
+  date_fin: z.string().min(1),
+  loyer_mensuel: z.number().min(1), 
+  caution_montant: z.number().min(1),
+  charges_mensuelles: z.number().min(0).default(0), 
+  frais_agence: z.number().min(0).default(0),
+  type_bail: z.string().default('habitation'), 
+  jour_paiement: z.number().min(1).max(31).default(5),
+  mode_paiement: z.string().default('virement'), 
+  clauses_specifiques: z.string().optional()
 });
 
 type FD = z.infer<typeof schema>;
-interface Props { initialData?: Partial<FD>; onSubmit: (d: FD) => void; onCancel: () => void; loading?: boolean; }
+
+interface Props { 
+  initialData?: Partial<FD>; 
+  onSubmit: (d: FD) => void; 
+  onCancel: () => void; 
+  loading?: boolean; 
+}
 
 export default function BailForm({ initialData, onSubmit, onCancel, loading }: Props) {
   const [locataires, setLocataires] = useState<any[]>([]);
@@ -29,24 +54,40 @@ export default function BailForm({ initialData, onSubmit, onCancel, loading }: P
 
   const { control, handleSubmit, formState: { errors }, watch, setValue } = useForm<FD>({
     resolver: zodResolver(schema) as any,
-    defaultValues: { type_bail: 'habitation', jour_paiement: 5, mode_paiement: 'virement', charges_mensuelles: 0, frais_agence: 0, ...initialData }
+    defaultValues: { 
+      type_bail: 'habitation', 
+      jour_paiement: 5, 
+      mode_paiement: 'virement', 
+      charges_mensuelles: 0, 
+      frais_agence: 0,
+      date_debut: '',
+      date_fin: '',
+      ...initialData 
+    }
   });
 
-// src/components/baux/BailForm.tsx - Correction du useEffect
+  useEffect(() => {
+    Promise.all([
+      locataireService.getLocataires({ statut: 'actif', limit: 200 }),
+      logementService.getDisponibles()
+    ]).then(([locs, logs]) => {
+      const locatairesData = Array.isArray(locs) ? locs : (locs as any)?.items || (locs as any)?.data || [];
+      const logementsData = Array.isArray(logs) ? logs : (logs as any)?.items || (logs as any)?.data || [];
+      
+      setLocataires(locatairesData);
+      setLogements(logementsData);
+    }).catch(console.error).finally(() => setLdData(false));
+  }, []);
 
-useEffect(() => {
-  Promise.all([
-    locataireService.getLocataires({ statut: 'actif', limit: 200 }),
-    logementService.getDisponibles()
-  ]).then(([locs, logs]) => {
-    // 🔥 Gérer tous les formats possibles
-    const locatairesData = Array.isArray(locs) ? locs : (locs as any)?.items || (locs as any)?.data || [];
-    const logementsData = Array.isArray(logs) ? logs : (logs as any)?.items || (logs as any)?.data || [];
-    
-    setLocataires(locatairesData);
-    setLogements(logementsData);
-  }).catch(console.error).finally(() => setLdData(false));
-}, []);
+  // Handler pour la soumission avec formatage des dates
+  const handleFormSubmit = (data: FD) => {
+    const formattedData = {
+      ...data,
+      date_debut: formatDateForAPI(data.date_debut),
+      date_fin: formatDateForAPI(data.date_fin)
+    };
+    onSubmit(formattedData);
+  };
 
   const selLog = logements.find(l => l.id === watch('logement_id'));
   const selLoc = locataires.find(l => l.id === watch('locataire_id'));
@@ -54,7 +95,7 @@ useEffect(() => {
   if (ldData) return <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress size={32} /></Box>;
 
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+    <Box component="form" onSubmit={handleSubmit(handleFormSubmit)}>
       <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e8edf2', mb: 3 }}>
         <CardContent sx={{ p: 2.5 }}>
           <Typography variant="h6" sx={{ mb: 2.5, fontWeight: 600, fontSize: '1rem' }}>Nouveau bail</Typography>
@@ -63,32 +104,55 @@ useEffect(() => {
             {/* Logement */}
             <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 250 }}>
               <Controller name="logement_id" control={control} render={({ field }) => (
-                <Autocomplete value={selLog || null} onChange={(_, v) => { field.onChange(v?.id || null); if (v?.loyer_base) setValue('loyer_mensuel', v.loyer_base); }} options={logements}
+                <Autocomplete 
+                  value={selLog || null} 
+                  onChange={(_, v) => { 
+                    field.onChange(v?.id || null); 
+                    if (v?.loyer_base) setValue('loyer_mensuel', v.loyer_base);
+                  }} 
+                  options={logements}
                   getOptionLabel={(o: any) => `${o.numero || ''} - ${o.batiment_nom || o.adresse || ''}`}
                   renderInput={(p) => <TextField {...p} label="Logement *" size="small" error={!!errors.logement_id} helperText={errors.logement_id?.message} />}
                   renderOption={(props, o: any) => (
-                    <li {...props} key={o.id}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Avatar src={o.photos?.[0]} sx={{ width: 28, height: 28, fontSize: 12 }}><Home sx={{ fontSize: 14 }} /></Avatar>
-                      <Box><Typography variant="body2">{o.numero} - {o.batiment_nom || o.adresse}</Typography><Typography variant="caption" color="text.secondary">{o.loyer_base?.toLocaleString()} Ar</Typography></Box>
-                    </Box></li>
+                    <li {...props} key={o.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar src={o.photos?.[0]} sx={{ width: 28, height: 28, fontSize: 12 }}><Home sx={{ fontSize: 14 }} /></Avatar>
+                        <Box>
+                          <Typography variant="body2">{o.numero} - {o.batiment_nom || o.adresse}</Typography>
+                          <Typography variant="caption" color="text.secondary">{o.loyer_base?.toLocaleString()} Ar</Typography>
+                        </Box>
+                      </Box>
+                    </li>
                   )}
-                  size="small" isOptionEqualToValue={(o, v) => o.id === v.id} />
+                  size="small" 
+                  isOptionEqualToValue={(o, v) => o.id === v.id} 
+                />
               )} />
             </Box>
 
             {/* Locataire */}
             <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 250 }}>
               <Controller name="locataire_id" control={control} render={({ field }) => (
-                <Autocomplete value={selLoc || null} onChange={(_, v) => field.onChange(v?.id || null)} options={locataires}
+                <Autocomplete 
+                  value={selLoc || null} 
+                  onChange={(_, v) => field.onChange(v?.id || null)} 
+                  options={locataires}
                   getOptionLabel={(o: any) => `${o.nom} ${o.prenom} - ${o.telephone || ''}`}
                   renderInput={(p) => <TextField {...p} label="Locataire *" size="small" error={!!errors.locataire_id} helperText={errors.locataire_id?.message} />}
                   renderOption={(props, o: any) => (
-                    <li {...props} key={o.id}><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: 'primary.main' }}>{o.prenom?.[0]}{o.nom?.[0]}</Avatar>
-                      <Box><Typography variant="body2">{o.nom} {o.prenom}</Typography><Typography variant="caption" color="text.secondary">{o.telephone} · {o.cin || 'N/A'}</Typography></Box>
-                    </Box></li>
+                    <li {...props} key={o.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: 'primary.main' }}>{o.prenom?.[0]}{o.nom?.[0]}</Avatar>
+                        <Box>
+                          <Typography variant="body2">{o.nom} {o.prenom}</Typography>
+                          <Typography variant="caption" color="text.secondary">{o.telephone} · {o.cin || 'N/A'}</Typography>
+                        </Box>
+                      </Box>
+                    </li>
                   )}
-                  size="small" isOptionEqualToValue={(o, v) => o.id === v.id} />
+                  size="small" 
+                  isOptionEqualToValue={(o, v) => o.id === v.id} 
+                />
               )} />
             </Box>
 
@@ -107,7 +171,9 @@ useEffect(() => {
       </Card>
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Button onClick={onCancel} variant="outlined" startIcon={<ArrowBack />}>Annuler</Button>
-        <Button type="submit" variant="contained" startIcon={<Save />} disabled={loading}>{loading ? '...' : 'Créer'}</Button>
+        <Button type="submit" variant="contained" startIcon={<Save />} disabled={loading}>
+          {loading ? 'Création...' : 'Créer'}
+        </Button>
       </Box>
     </Box>
   );
@@ -116,12 +182,41 @@ useEffect(() => {
 function F({ n, l, t, s, options, m, r, full, c, e }: any) {
   return (
     <Box sx={{ flex: full ? '1 1 100%' : '1 1 calc(50% - 8px)', minWidth: 250 }}>
-      <Controller name={n} control={c} render={({ field: fl }) => (
-        s ? <TextField {...fl} fullWidth select label={l} size="small">{options?.map((o: string) => <MenuItem key={o} value={o}>{o}</MenuItem>)}</TextField>
-        : <TextField {...fl} fullWidth label={l} type={t || 'text'} size="small" multiline={m} rows={r} value={fl.value ?? ''}
+      <Controller name={n} control={c} render={({ field: fl }) => {
+        // Pour les champs de date, formater la valeur pour l'affichage
+        let displayValue = fl.value;
+        if (t === 'date' && displayValue && displayValue.includes('T')) {
+          displayValue = displayValue.split('T')[0];
+        }
+        
+        return s ? (
+          <TextField 
+            {...fl} 
+            fullWidth 
+            select 
+            label={l} 
+            size="small"
+            value={fl.value || ''}
+            onChange={(e) => fl.onChange(e.target.value)}
+          >
+            {options?.map((o: string) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+          </TextField>
+        ) : (
+          <TextField 
+            fullWidth 
+            label={l} 
+            type={t || 'text'} 
+            size="small" 
+            multiline={m} 
+            rows={r}
+            value={displayValue ?? ''}
             onChange={e => fl.onChange(t === 'number' ? Number(e.target.value) : e.target.value)}
-            error={!!e[n]} helperText={e[n]?.message} slotProps={t === 'date' ? { inputLabel: { shrink: true } } : {}} />
-      )} />
+            error={!!e[n]} 
+            helperText={e[n]?.message} 
+            slotProps={t === 'date' ? { inputLabel: { shrink: true } } : {}} 
+          />
+        );
+      }} />
     </Box>
   );
 }
