@@ -24,3 +24,14 @@ export const formatPhoneNumber = (phone: string): string => {
   }
   return phone;
 };
+
+
+// Ou utilisez une version safe dans le composant
+const safeFormatDate = (date: string | null | undefined): string => {
+  if (!date) return '-';
+  try {
+    return new Date(date).toLocaleDateString();
+  } catch {
+    return '-';
+  }
+};

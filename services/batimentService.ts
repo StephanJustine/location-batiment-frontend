@@ -89,6 +89,15 @@
 import api from '@/lib/api';
 
 export interface Batiment {
+  capacite: string;
+  nb_logements_total: any;
+  nb_logements_occupes: any;
+  nb_logements: number;
+  nb_ascenseurs: number;
+  nb_parkings: number;
+  nb_sanitaires: number;
+  equipements: boolean;
+  surveillance: any;
   id: number;
   nom: string;
   adresse: string;

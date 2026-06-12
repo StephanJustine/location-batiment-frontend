@@ -21,6 +21,9 @@ import { formatCurrency, formatDate } from '@/utils/formatters';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import ContratSection from '@/components/baux/ContratSection';
+import BailPaiementSection from '@/components/baux/BailPaiementSection';
+import PaiementCalendar from '@/components/paiements/PaiementCalendar';
+import PaiementMonthlyView from '@/components/paiements/PaiementMonthlyView';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
 const getImageUrl = (path: string | null | undefined): string => {
@@ -136,6 +139,8 @@ export default function BailDetailPage() {
               <Tab label="Aperçu" icon={<Home sx={{ fontSize: 16 }} />} iconPosition="start" />
               <Tab label="Contrat" icon={<Description sx={{ fontSize: 16 }} />} iconPosition="start" />
               <Tab label="Paiements" icon={<Receipt sx={{ fontSize: 16 }} />} iconPosition="start" />
+              <Tab label="Échéances" icon={<CalendarToday />} iconPosition="start" />
+              <Tab label="Finance" icon={<AttachMoney />} iconPosition="start" />
             </Tabs>
           </Paper>
 
@@ -334,7 +339,7 @@ export default function BailDetailPage() {
           )}
 
           {/* Tab 2 : Paiements */}
-          {tab === 2 && (
+          {/* {tab === 2 && (
             <Card sx={{ borderRadius: 3, border: '1px solid #e8edf2', boxShadow: 'none', p: 6, textAlign: 'center' }}>
               <Receipt sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
               <Typography variant="h6" color="text.secondary">Paiements</Typography>
@@ -348,8 +353,37 @@ export default function BailDetailPage() {
                 Voir tous les paiements
               </Button>
             </Card>
-          )}
+          )} */}
 
+          {/* Tab 2 : Paiements */}
+          {tab === 2 && (
+            <BailPaiementSection 
+              bailId={id}  // ← id doit être un nombre valide
+              cautionMontant={d?.caution_montant || 0}
+              onRefresh={() => {
+                bailService.getById(id).then(setD);
+              }}
+            />
+          )}
+          {tab === 3 && (
+            <Paper sx={{ p: 2, borderRadius: 2 }}>
+              <PaiementCalendar 
+                bailId={id}
+                loyerMensuel={d.loyer_mensuel}
+                chargesMensuelles={d.charges_mensuelles || 0}
+                onRefresh={() => bailService.getById(id).then(setD)}
+              />
+            </Paper>
+          )}
+          {tab === 4 && (
+            <Paper sx={{ p: 2, borderRadius: 2 }}>
+              <PaiementMonthlyView 
+                bailId={id}
+                loyerMensuel={d.loyer_mensuel}
+                chargesMensuelles={d.charges_mensuelles || 0}
+              />
+            </Paper>
+          )}
           {/* Lightbox */}
           {lightbox && logPhotos.length > 0 && (
             <Dialog open={lightbox} onClose={() => setLightbox(false)} maxWidth="lg" fullWidth
