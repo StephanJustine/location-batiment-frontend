@@ -289,9 +289,35 @@ class LogementService {
   }
 
   // Récupérer tous les logements
-  async getAll(): Promise<Logement[]> {
+  // async getAll(p0: { limit: number; }): Promise<Logement[]> {
+  //   try {
+  //     const response = await api.get('/logements/');
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Erreur récupération logements:', error);
+  //     throw this.handleError(error);
+  //   }
+  // }
+
+  // Récupérer tous les logements avec paramètres optionnels
+  async getAll(params?: { 
+    batiment_id?: number; 
+    statut?: string; 
+    limit?: number; 
+    skip?: number;
+    search?: string;
+  }): Promise<Logement[]> {
     try {
-      const response = await api.get('/logements/');
+      const urlParams = new URLSearchParams();
+      if (params?.batiment_id) urlParams.append('batiment_id', params.batiment_id.toString());
+      if (params?.statut) urlParams.append('statut', params.statut);
+      if (params?.limit) urlParams.append('limit', params.limit.toString());
+      if (params?.skip) urlParams.append('skip', params.skip.toString());
+      if (params?.search) urlParams.append('search', params.search);
+      
+      // 🔥 Utiliser le bon endpoint sans slash final
+      const url = `/logements${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error('Erreur récupération logements:', error);
@@ -512,6 +538,27 @@ class LogementService {
     } catch (error) {
       console.error('Erreur vérification numéro:', error);
       return false;
+    }
+  }
+// Récupérer les logements pour les relevés JIRAMA
+  async getForReleves(params?: {
+    skip: any; limit?: number 
+}): Promise<Logement[]> {
+    try {
+      // 🔥 Utiliser le bon endpoint avec paramètres
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.skip) queryParams.append('skip', params.skip.toString());
+      
+      const url = `/logements${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      console.log('📡 Appel API logements:', url);
+      
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur récupération logements pour relevés:', error);
+      // Retourner un tableau vide en cas d'erreur
+      return [];
     }
   }
 

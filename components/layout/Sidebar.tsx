@@ -34,10 +34,12 @@ import {
   ChevronLeft as ChevronLeftIcon,
   Menu as MenuIcon,
   Description as DescriptionIcon,
+  WaterDrop,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { text } from 'stream/consumers';
 
 const drawerWidth = 260;
 const collapsedWidth = 72;
@@ -98,6 +100,11 @@ const menuItems = [
       { text: 'Baux', icon: <ReceiptIcon />, path: '/baux' },
       { text: 'Contrats', icon: <DescriptionIcon />, path: '/contrats' }, // 🔥 Ajouté
     ]
+  },
+  {
+    text: 'Relevés',
+    path: '/releves',
+    icon: <WaterDrop />
   },
   { 
     text: 'Finances', icon: <PaymentIcon />,

@@ -1,5 +1,6 @@
 // src/types/paiementSession.ts
 export interface PaiementSession {
+  bail_numero: string;
   id: number;
   bail_id: number;
   mois: number;

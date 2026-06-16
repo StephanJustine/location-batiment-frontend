@@ -460,7 +460,7 @@
 
 'use client';
 
-import { JSX, useEffect, useState } from 'react';
+import { JSX, SetStateAction, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Box, Container, Typography, IconButton, Chip, Grid,
@@ -967,7 +967,7 @@ export default function BatimentDetailPage() {
                     </Button>
                   </Box>
                 ) : (
-                  <LogementsTable logements={logements} onView={(id) => router.push(`/logements/${id}`)} getStatutChip={getStatutChip} formatCurrency={formatCurrency} />
+                  <LogementsTable logements={logements} onView={(id: any) => router.push(`/logements/${id}`)} getStatutChip={getStatutChip} formatCurrency={formatCurrency} />
                 )}
               </TabPanel>
 
@@ -1065,7 +1065,7 @@ export default function BatimentDetailPage() {
               {/* Tab 4 - Photos */}
               <TabPanel value={tabValue} index={4}>
                 {photosList.length > 0 ? (
-                  <PhotosGrid photos={photosList} batimentNom={batiment.nom} getImageUrl={getImageUrl} onImageClick={(idx) => { setSelectedImageIndex(idx); setOpenLightbox(true); }} />
+                  <PhotosGrid photos={photosList} batimentNom={batiment.nom} getImageUrl={getImageUrl} onImageClick={(idx: SetStateAction<number>) => { setSelectedImageIndex(idx); setOpenLightbox(true); }} />
                 ) : (
                   <Box sx={{ textAlign: 'center', py: 6 }}>
                     <ImageNotSupported sx={{ fontSize: 48, color: '#cbd5e1' }} />

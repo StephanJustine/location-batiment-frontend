@@ -140,7 +140,7 @@ export default function BailDetailPage() {
               <Tab label="Contrat" icon={<Description sx={{ fontSize: 16 }} />} iconPosition="start" />
               <Tab label="Paiements" icon={<Receipt sx={{ fontSize: 16 }} />} iconPosition="start" />
               <Tab label="Échéances" icon={<CalendarToday />} iconPosition="start" />
-              <Tab label="Finance" icon={<AttachMoney />} iconPosition="start" />
+              {/* <Tab label="Finance" icon={<AttachMoney />} iconPosition="start" /> */}
             </Tabs>
           </Paper>
 
@@ -306,54 +306,8 @@ export default function BailDetailPage() {
               {/* Contrat PDF */}
               <ContratSection bailId={id} contratPdfUrl={d.contrat_pdf_url} onGenerate={() => bailService.getById(id).then(setD)} />
                 
-              {/* Contrat PDF + Impression */}
-              {/* <Card sx={{ borderRadius: 2.5, border: '1px solid #e8edf2', boxShadow: 'none' }}>
-                <CardContent sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar sx={{ width: 44, height: 44, bgcolor: '#e8f5e9' }}><PictureAsPdf sx={{ color: '#2e7d32' }} /></Avatar>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Contrat PDF</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {d.contrat_pdf_url ? '✅ Document disponible' : '❌ Non généré'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Stack direction="row" spacing={0.8}>
-                    {d.contrat_pdf_url ? (
-                      <>
-                        <Button size="small" variant="outlined" startIcon={<Download sx={{ fontSize: 15 }} />} href={d.contrat_pdf_url} target="_blank"
-                          sx={{ borderRadius: 2, textTransform: 'none', fontSize: '0.7rem' }}>Télécharger</Button>
-                        <Button size="small" variant="contained" startIcon={<PictureAsPdf sx={{ fontSize: 15 }} />} onClick={() => window.print()}
-                          sx={{ borderRadius: 2, textTransform: 'none', fontSize: '0.7rem', bgcolor: '#2e7d32' }}>Imprimer</Button>
-                      </>
-                    ) : (
-                      <Button size="small" variant="contained" startIcon={<PictureAsPdf sx={{ fontSize: 15 }} />}
-                        sx={{ borderRadius: 2, textTransform: 'none', fontSize: '0.7rem', bgcolor: '#2e7d32' }}>
-                        Générer le contrat
-                      </Button>
-                    )}
-                  </Stack>
-                </CardContent>
-              </Card> */}
             </Box>
           )}
-
-          {/* Tab 2 : Paiements */}
-          {/* {tab === 2 && (
-            <Card sx={{ borderRadius: 3, border: '1px solid #e8edf2', boxShadow: 'none', p: 6, textAlign: 'center' }}>
-              <Receipt sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary">Paiements</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {d.paiements_effectues || 0} payés · {d.paiements_impayes || 0} impayés
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main', mb: 2 }}>
-                Total payé : {formatCurrency(d.total_paye || 0)}
-              </Typography>
-              <Button variant="outlined" size="small" onClick={() => r.push('/paiements')} sx={{ borderRadius: 2, textTransform: 'none' }}>
-                Voir tous les paiements
-              </Button>
-            </Card>
-          )} */}
 
           {/* Tab 2 : Paiements */}
           {tab === 2 && (
@@ -375,7 +329,7 @@ export default function BailDetailPage() {
               />
             </Paper>
           )}
-          {tab === 4 && (
+          {/* {tab === 4 && (
             <Paper sx={{ p: 2, borderRadius: 2 }}>
               <PaiementMonthlyView 
                 bailId={id}
@@ -383,7 +337,7 @@ export default function BailDetailPage() {
                 chargesMensuelles={d.charges_mensuelles || 0}
               />
             </Paper>
-          )}
+          )} */}
           {/* Lightbox */}
           {lightbox && logPhotos.length > 0 && (
             <Dialog open={lightbox} onClose={() => setLightbox(false)} maxWidth="lg" fullWidth
