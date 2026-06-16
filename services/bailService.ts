@@ -15,4 +15,10 @@ export const bailService = {
   getAvenants: async (bailId: number) => (await api.get<Avenant[]>(`/baux/${bailId}/avenants`)).data,
   addAvenant: async (data: any) => (await api.post<Avenant>('/baux/avenants', data)).data,
   getNotifications: async (bailId: number) => (await api.get(`/baux/${bailId}/notifications`)).data,
+    async getByLogement(logementId: number): Promise<Bail[]> {
+    const response = await api.get('/baux', { 
+      params: { logement_id: logementId } 
+    });
+    return response.data;
+  },
 };

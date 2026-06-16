@@ -1,20 +1,817 @@
+// // src/app/releves/page.tsx
+
+// 'use client';
+
+// import { useState, useEffect, Fragment, JSX } from 'react';
+// import { useRouter } from 'next/navigation';
+// import {
+//   Box, Container, Typography, Button, Grid,
+//   CircularProgress, Alert, Chip, IconButton, InputBase, Paper,
+//   Card, CardContent, Table, TableBody, TableCell, TableContainer,
+//   TableHead, TableRow, Avatar, Divider, Stack, Tooltip,
+//   Dialog, DialogTitle, DialogContent, DialogActions,
+//   TextField, MenuItem, FormControl, InputLabel, Select,
+//   Snackbar, Autocomplete, LinearProgress
+// } from '@mui/material';
+// import {
+//   Add, Search, WaterDrop, ElectricBolt, TrendingUp,
+//   Assessment, Close, Refresh, ChevronLeft, ChevronRight,
+//   Receipt, CheckCircle, Warning, Schedule, Visibility, Home,
+//   Delete, Edit, Print, Download
+// } from '@mui/icons-material';
+// import Sidebar from '@/components/layout/Sidebar';
+// import Header from '@/components/layout/Header';
+// import { releveService } from '@/services/releveService';
+// import { logementService } from '@/services/logementService';
+// import { TypeReleve, StatutReleve, Releve } from '@/types/releve';
+// import { formatCurrency, formatDate } from '@/utils/formatters';
+
+// // ==================== CONSTANTES ====================
+
+// const typeLabels: Record<TypeReleve, { label: string; icon: JSX.Element; color: string; bg: string }> = {
+//   [TypeReleve.EAU]: { label: 'Eau', icon: <WaterDrop sx={{ fontSize: 14 }} />, color: '#3b82f6', bg: '#eff6ff' },
+//   [TypeReleve.ELECTRICITE]: { label: 'Électricité', icon: <ElectricBolt sx={{ fontSize: 14 }} />, color: '#f59e0b', bg: '#fffbeb' },
+//   [TypeReleve.GAZ]: { label: 'Gaz', icon: <TrendingUp sx={{ fontSize: 14 }} />, color: '#10b981', bg: '#f0fdf4' },
+//   [TypeReleve.AUTRE]: { label: 'Autre', icon: <Assessment sx={{ fontSize: 14 }} />, color: '#64748b', bg: '#f8fafc' }
+// };
+
+// const statutLabels: Record<StatutReleve, { label: string; color: string; bg: string; icon: JSX.Element }> = {
+//   [StatutReleve.BROUILLON]: { label: 'Brouillon', color: '#f59e0b', bg: '#fffbeb', icon: <Schedule sx={{ fontSize: 12 }} /> },
+//   [StatutReleve.VALIDE]: { label: 'Validé', color: '#22c55e', bg: '#f0fdf4', icon: <CheckCircle sx={{ fontSize: 12 }} /> },
+//   [StatutReleve.FACTURE]: { label: 'Facturé', color: '#3b82f6', bg: '#eff6ff', icon: <Receipt sx={{ fontSize: 12 }} /> },
+//   [StatutReleve.CONTESTE]: { label: 'Contesté', color: '#ef4444', bg: '#fef2f2', icon: <Warning sx={{ fontSize: 12 }} /> }
+// };
+
+// const moisNoms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+// // ==================== COMPOSANT PRINCIPAL ====================
+
+// export default function RelevesPage() {
+//   const router = useRouter();
+  
+//   // États
+//   const [mobileOpen, setMobileOpen] = useState(false);
+//   const [loading, setLoading] = useState(true);
+//   const [loadingLogements, setLoadingLogements] = useState(false);
+//   const [releves, setReleves] = useState<Releve[]>([]);
+//   const [logements, setLogements] = useState<any[]>([]);
+//   const [annee, setAnnee] = useState(new Date().getFullYear());
+//   const [search, setSearch] = useState('');
+//   const [error, setError] = useState<string | null>(null);
+//   const [success, setSuccess] = useState('');
+  
+//   // États des filtres
+//   const [selectedType, setSelectedType] = useState<TypeReleve | 'all'>('all');
+//   const [selectedStatut, setSelectedStatut] = useState<StatutReleve | 'all'>('all');
+  
+//   // États du dialogue
+//   const [openDialog, setOpenDialog] = useState(false);
+//   const [selectedLogement, setSelectedLogement] = useState<any>(null);
+//   const [submitting, setSubmitting] = useState(false);
+  
+//   // États du dialogue de suppression
+//   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+//   const [releveToDelete, setReleveToDelete] = useState<Releve | null>(null);
+//   const [deleting, setDeleting] = useState(false);
+
+//   // Formulaire
+//   const [formData, setFormData] = useState({
+//     logement_id: '',
+//     type_releve: TypeReleve.EAU,
+//     index_ancien: 0,
+//     index_nouveau: 0,
+//     mois: new Date().getMonth() + 1,
+//     annee: new Date().getFullYear(),
+//     date_releve: new Date().toISOString().slice(0, 16),
+//     notes: ''
+//   });
+
+//   // ==================== EFFETS ====================
+
+//   useEffect(() => {
+//     fetchData();
+//     fetchLogements();
+//   }, [annee]);
+
+//   // ==================== FONCTIONS API ====================
+
+//   const fetchData = async () => {
+//     setLoading(true);
+//     try {
+//       const data = await releveService.getAll({ annee });
+//       setReleves(Array.isArray(data) ? data : []);
+//       setError(null);
+//     } catch (err) {
+//       console.error('Erreur chargement relevés:', err);
+//       setError('Erreur lors du chargement des relevés');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const fetchLogements = async () => {
+//     setLoadingLogements(true);
+//     try {
+//       const data = await logementService.getOccupes();
+//       setLogements(Array.isArray(data) ? data : []);
+//     } catch (err) {
+//       console.error('Erreur chargement logements:', err);
+//       setLogements([]);
+//     } finally {
+//       setLoadingLogements(false);
+//     }
+//   };
+
+//   // ==================== CRUD ====================
+
+//   const handleSubmit = async () => {
+//     if (!formData.logement_id) {
+//       setError('Veuillez sélectionner un logement');
+//       return;
+//     }
+    
+//     const ancien = Number(formData.index_ancien);
+//     const nouveau = Number(formData.index_nouveau);
+    
+//     if (nouveau < ancien) {
+//       setError('Le nouvel index doit être supérieur à l\'ancien');
+//       return;
+//     }
+
+//     setSubmitting(true);
+//     try {
+//       const payload = {
+//         logement_id: Number(formData.logement_id),
+//         type_releve: formData.type_releve,
+//         index_ancien: ancien,
+//         index_nouveau: nouveau,
+//         mois: Number(formData.mois),
+//         annee: Number(formData.annee),
+//         date_releve: new Date(formData.date_releve).toISOString(),
+//         notes: formData.notes || undefined
+//       };
+      
+//       await releveService.create(payload);
+//       setSuccess('Relevé créé avec succès');
+//       setOpenDialog(false);
+//       resetForm();
+//       fetchData();
+//     } catch (err: any) {
+//       console.error('Erreur création:', err);
+//       const errorDetail = err?.response?.data?.detail || err?.message || 'Erreur lors de la création';
+//       setError(typeof errorDetail === 'string' ? errorDetail : JSON.stringify(errorDetail));
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
+
+//   const handleDelete = async () => {
+//     if (!releveToDelete) return;
+    
+//     setDeleting(true);
+//     try {
+//       await releveService.deleteReleve(releveToDelete.id);
+//       setSuccess('Relevé supprimé avec succès');
+//       setOpenDeleteDialog(false);
+//       setReleveToDelete(null);
+//       fetchData();
+//     } catch (err: any) {
+//       console.error('Erreur suppression:', err);
+//       setError(err?.message || 'Erreur lors de la suppression');
+//     } finally {
+//       setDeleting(false);
+//     }
+//   };
+
+//   const handleCalculerConsommation = async (releveId: number) => {
+//     try {
+//       const result = await releveService.calculerConsommation(releveId);
+//       if (result) {
+//         setSuccess(`Consommation calculée: ${result.consommation} - ${formatCurrency(result.montant)}`);
+//         fetchData();
+//       }
+//     } catch (err) {
+//       setError('Erreur lors du calcul de la consommation');
+//     }
+//   };
+
+//   // ==================== UTILITAIRES ====================
+
+//   const resetForm = () => {
+//     setFormData({
+//       logement_id: '',
+//       type_releve: TypeReleve.EAU,
+//       index_ancien: 0,
+//       index_nouveau: 0,
+//       mois: new Date().getMonth() + 1,
+//       annee: new Date().getFullYear(),
+//       date_releve: new Date().toISOString().slice(0, 16),
+//       notes: ''
+//     });
+//     setSelectedLogement(null);
+//   };
+
+//   const clearSearch = () => setSearch('');
+
+//   const getLogementInfo = (logementId: number) => {
+//     return logements.find(l => l.id === logementId);
+//   };
+
+//   // ==================== FILTRAGE ====================
+
+//   const filteredReleves = releves.filter(r => {
+//     const logement = getLogementInfo(r.logement_id);
+//     const searchLower = search.toLowerCase();
+//     const matchSearch = search === '' || 
+//       logement?.numero?.toLowerCase().includes(searchLower) ||
+//       r.type_releve.toLowerCase().includes(searchLower) ||
+//       r.statut.toLowerCase().includes(searchLower) ||
+//       r.notes?.toLowerCase().includes(searchLower);
+//     const matchType = selectedType === 'all' || r.type_releve === selectedType;
+//     const matchStatut = selectedStatut === 'all' || r.statut === selectedStatut;
+//     return r.annee === annee && matchSearch && matchType && matchStatut;
+//   });
+
+//   // ==================== STATISTIQUES ====================
+
+//   const totalEau = filteredReleves.filter(r => r.type_releve === TypeReleve.EAU).length;
+//   const totalElec = filteredReleves.filter(r => r.type_releve === TypeReleve.ELECTRICITE).length;
+//   const totalMontant = filteredReleves.reduce((sum, r) => sum + (r.montant || 0), 0);
+//   const totalConsommation = filteredReleves.reduce((sum, r) => sum + (r.consommation || 0), 0);
+//   const totalBrouillon = filteredReleves.filter(r => r.statut === StatutReleve.BROUILLON).length;
+
+//   // ==================== RENDU ====================
+
+//   if (loading) {
+//     return (
+//       <Box sx={{ display: 'flex', bgcolor: '#f8fafc', minHeight: '100vh' }}>
+//         <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+//         <Box component="main" sx={{ flexGrow: 1 }}>
+//           <Header onMenuClick={() => setMobileOpen(!mobileOpen)} />
+//           <Container sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+//             <CircularProgress size={40} />
+//             <Typography variant="body2" sx={{ mt: 2, color: '#64748b' }}>
+//               Chargement des relevés...
+//             </Typography>
+//           </Container>
+//         </Box>
+//       </Box>
+//     );
+//   }
+
+//   return (
+//     <Box sx={{ display: 'flex', bgcolor: '#f8fafc', minHeight: '100vh' }}>
+//       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+//       <Box component="main" sx={{ flexGrow: 1 }}>
+//         <Header onMenuClick={() => setMobileOpen(!mobileOpen)} />
+        
+//         <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 2.5 }, mt: { xs: 7, sm: 8 } }}>
+          
+//           {/* En-tête */}
+//           <Box sx={{ mb: 3 }}>
+//             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+//               <Box>
+//                 <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a1a', mb: 0.5 }}>
+//                   Relevés JIRAMA
+//                 </Typography>
+//                 <Typography variant="body2" sx={{ color: '#757575' }}>
+//                   Gestion des relevés d&apos;eau et d&apos;électricité
+//                 </Typography>
+//               </Box>
+//               <Button 
+//                 variant="contained" 
+//                 startIcon={<Add />} 
+//                 onClick={() => setOpenDialog(true)} 
+//                 sx={{ bgcolor: '#1976d2', textTransform: 'none' }}
+//               >
+//                 Nouveau relevé
+//               </Button>
+//             </Box>
+//           </Box>
+
+//           {/* Statistiques */}
+//           <Grid container spacing={2} sx={{ mb: 3 }}>
+//             <Grid size={{ xs: 6, sm: 3 }}>
+//               <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+//                 <CardContent sx={{ p: 2 }}>
+//                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+//                     <Box sx={{ p: 1, borderRadius: 1, bgcolor: '#eff6ff' }}>
+//                       <WaterDrop sx={{ color: '#3b82f6', fontSize: 20 }} />
+//                     </Box>
+//                     <Box>
+//                       <Typography variant="caption" color="text.secondary">Relevés eau</Typography>
+//                       <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalEau}</Typography>
+//                     </Box>
+//                   </Box>
+//                 </CardContent>
+//               </Card>
+//             </Grid>
+//             <Grid size={{ xs: 6, sm: 3 }}>
+//               <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+//                 <CardContent sx={{ p: 2 }}>
+//                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+//                     <Box sx={{ p: 1, borderRadius: 1, bgcolor: '#fffbeb' }}>
+//                       <ElectricBolt sx={{ color: '#f59e0b', fontSize: 20 }} />
+//                     </Box>
+//                     <Box>
+//                       <Typography variant="caption" color="text.secondary">Relevés électricité</Typography>
+//                       <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalElec}</Typography>
+//                     </Box>
+//                   </Box>
+//                 </CardContent>
+//               </Card>
+//             </Grid>
+//             <Grid size={{ xs: 6, sm: 3 }}>
+//               <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+//                 <CardContent sx={{ p: 2 }}>
+//                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+//                     <Box sx={{ p: 1, borderRadius: 1, bgcolor: '#fffbeb' }}>
+//                       <Schedule sx={{ color: '#f59e0b', fontSize: 20 }} />
+//                     </Box>
+//                     <Box>
+//                       <Typography variant="caption" color="text.secondary">Brouillons</Typography>
+//                       <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalBrouillon}</Typography>
+//                     </Box>
+//                   </Box>
+//                 </CardContent>
+//               </Card>
+//             </Grid>
+//             <Grid size={{ xs: 6, sm: 3 }}>
+//               <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+//                 <CardContent sx={{ p: 2 }}>
+//                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+//                     <Box sx={{ p: 1, borderRadius: 1, bgcolor: '#f0fdf4' }}>
+//                       <Receipt sx={{ color: '#10b981', fontSize: 20 }} />
+//                     </Box>
+//                     <Box>
+//                       <Typography variant="caption" color="text.secondary">Montant total</Typography>
+//                       <Typography variant="h6" sx={{ fontWeight: 700 }}>{formatCurrency(totalMontant)}</Typography>
+//                     </Box>
+//                   </Box>
+//                 </CardContent>
+//               </Card>
+//             </Grid>
+//           </Grid>
+
+//           {/* Barre de recherche et filtres */}
+//           <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
+//             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+//               <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, position: 'relative' }}>
+//                 <Search sx={{ position: 'absolute', left: 12, color: '#94a3b8', fontSize: 18 }} />
+//                 <InputBase
+//                   placeholder="Rechercher par logement, type, statut ou notes..."
+//                   value={search}
+//                   onChange={(e) => setSearch(e.target.value)}
+//                   sx={{ 
+//                     pl: 4.5, pr: 3, py: 1, width: '100%', fontSize: '0.85rem',
+//                     bgcolor: '#f8fafc', borderRadius: 2,
+//                     '& input': { p: 0 }
+//                   }}
+//                 />
+//                 {search && (
+//                   <IconButton size="small" onClick={clearSearch} sx={{ position: 'absolute', right: 8 }}>
+//                     <Close sx={{ fontSize: 16, color: '#94a3b8' }} />
+//                   </IconButton>
+//                 )}
+//               </Box>
+
+//               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+//                 <IconButton size="small" onClick={() => setAnnee(annee - 1)} sx={{ bgcolor: '#f1f5f9' }}>
+//                   <ChevronLeft fontSize="small" />
+//                 </IconButton>
+//                 <Typography variant="body1" sx={{ fontWeight: 600, minWidth: 60, textAlign: 'center' }}>{annee}</Typography>
+//                 <IconButton size="small" onClick={() => setAnnee(annee + 1)} sx={{ bgcolor: '#f1f5f9' }}>
+//                   <ChevronRight fontSize="small" />
+//                 </IconButton>
+//               </Box>
+
+//               <FormControl size="small" sx={{ minWidth: 130 }}>
+//                 <Select
+//                   value={selectedType}
+//                   onChange={(e) => setSelectedType(e.target.value as TypeReleve | 'all')}
+//                   displayEmpty
+//                 >
+//                   <MenuItem value="all">Tous types</MenuItem>
+//                   <MenuItem value={TypeReleve.EAU}>Eau</MenuItem>
+//                   <MenuItem value={TypeReleve.ELECTRICITE}>Électricité</MenuItem>
+//                   <MenuItem value={TypeReleve.GAZ}>Gaz</MenuItem>
+//                   <MenuItem value={TypeReleve.AUTRE}>Autre</MenuItem>
+//                 </Select>
+//               </FormControl>
+
+//               <FormControl size="small" sx={{ minWidth: 140 }}>
+//                 <Select
+//                   value={selectedStatut}
+//                   onChange={(e) => setSelectedStatut(e.target.value as StatutReleve | 'all')}
+//                   displayEmpty
+//                 >
+//                   <MenuItem value="all">Tous statuts</MenuItem>
+//                   <MenuItem value={StatutReleve.BROUILLON}>Brouillon</MenuItem>
+//                   <MenuItem value={StatutReleve.VALIDE}>Validé</MenuItem>
+//                   <MenuItem value={StatutReleve.FACTURE}>Facturé</MenuItem>
+//                   <MenuItem value={StatutReleve.CONTESTE}>Contesté</MenuItem>
+//                 </Select>
+//               </FormControl>
+
+//               <IconButton onClick={fetchData} sx={{ bgcolor: '#f1f5f9' }}>
+//                 <Refresh fontSize="small" />
+//               </IconButton>
+//             </Box>
+
+//             {(selectedType !== 'all' || selectedStatut !== 'all') && (
+//               <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
+//                 {selectedType !== 'all' && (
+//                   <Chip 
+//                     label={typeLabels[selectedType].label} 
+//                     size="small" 
+//                     onDelete={() => setSelectedType('all')}
+//                     sx={{ bgcolor: typeLabels[selectedType].bg, color: typeLabels[selectedType].color }}
+//                   />
+//                 )}
+//                 {selectedStatut !== 'all' && (
+//                   <Chip 
+//                     label={statutLabels[selectedStatut].label} 
+//                     size="small" 
+//                     onDelete={() => setSelectedStatut('all')}
+//                     sx={{ bgcolor: statutLabels[selectedStatut].bg, color: statutLabels[selectedStatut].color }}
+//                   />
+//                 )}
+//               </Box>
+//             )}
+//           </Paper>
+
+//           {/* Alertes */}
+//           {error && (
+//             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>
+//               {error}
+//             </Alert>
+//           )}
+
+//           {/* Tableau des relevés */}
+//           {filteredReleves.length === 0 ? (
+//             <Paper sx={{ textAlign: 'center', py: 6, borderRadius: 2 }}>
+//               <WaterDrop sx={{ fontSize: 48, color: '#cbd5e1', mb: 1 }} />
+//               <Typography variant="body1" sx={{ color: '#64748b', mb: 1 }}>
+//                 {search || selectedType !== 'all' || selectedStatut !== 'all' 
+//                   ? 'Aucun résultat ne correspond à vos critères'
+//                   : `Aucun relevé pour l'année ${annee}`}
+//               </Typography>
+//               <Button 
+//                 variant="contained" 
+//                 startIcon={<Add />} 
+//                 onClick={() => setOpenDialog(true)} 
+//                 sx={{ bgcolor: '#1976d2', mt: 1, textTransform: 'none' }}
+//               >
+//                 Ajouter un relevé
+//               </Button>
+//             </Paper>
+//           ) : (
+//             <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+//               <Table size="small">
+//                 <TableHead sx={{ bgcolor: '#f8fafc' }}>
+//                   <TableRow>
+//                     <TableCell sx={{ fontWeight: 600 }}>Logement</TableCell>
+//                     <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+//                     <TableCell sx={{ fontWeight: 600 }}>Période</TableCell>
+//                     <TableCell sx={{ fontWeight: 600 }}>Consommation</TableCell>
+//                     <TableCell sx={{ fontWeight: 600 }}>Montant</TableCell>
+//                     <TableCell sx={{ fontWeight: 600 }}>Statut</TableCell>
+//                     <TableCell align="center" sx={{ fontWeight: 600 }}>Actions</TableCell>
+//                   </TableRow>
+//                 </TableHead>
+//                 <TableBody>
+//                   {filteredReleves.map((releve) => {
+//                     const typeInfo = typeLabels[releve.type_releve];
+//                     const statutInfo = statutLabels[releve.statut];
+//                     const logement = getLogementInfo(releve.logement_id);
+                    
+//                     return (
+//                       <TableRow 
+//                         key={releve.id} 
+//                         hover 
+//                         sx={{ cursor: 'pointer' }}
+//                         onClick={() => router.push(`/releves/${releve.id}`)}
+//                       >
+//                         <TableCell>
+//                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+//                             <Avatar sx={{ width: 28, height: 28, bgcolor: '#e2e8f0', fontSize: '0.7rem' }}>
+//                               {logement?.numero?.[0] || 'L'}
+//                             </Avatar>
+//                             <Typography variant="body2" sx={{ fontWeight: 500 }}>
+//                               {logement?.numero || `#${releve.logement_id}`}
+//                             </Typography>
+//                           </Box>
+//                         </TableCell>
+//                         <TableCell>
+//                           <Chip 
+//                             size="small" 
+//                             icon={typeInfo.icon} 
+//                             label={typeInfo.label} 
+//                             sx={{ height: 22, bgcolor: typeInfo.bg, color: typeInfo.color }} 
+//                           />
+//                         </TableCell>
+//                         <TableCell>
+//                           {moisNoms[releve.mois - 1]} {releve.annee}
+//                         </TableCell>
+//                         <TableCell>
+//                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
+//                             {(releve.consommation || 0).toFixed(2)} {releve.type_releve === TypeReleve.EAU ? 'm³' : 'kWh'}
+//                           </Typography>
+//                         </TableCell>
+//                         <TableCell sx={{ fontWeight: 600, color: '#2e7d32' }}>
+//                           {formatCurrency(releve.montant || 0)}
+//                         </TableCell>
+//                         <TableCell>
+//                           <Chip 
+//                             icon={statutInfo.icon}
+//                             label={statutInfo.label} 
+//                             size="small" 
+//                             sx={{ height: 22, bgcolor: statutInfo.bg, color: statutInfo.color }} 
+//                           />
+//                         </TableCell>
+//                         <TableCell align="center">
+//                           <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'center' }}>
+//                             <Tooltip title="Voir les détails">
+//                               <IconButton 
+//                                 size="small" 
+//                                 onClick={(e) => {
+//                                   e.stopPropagation();
+//                                   router.push(`/releves/${releve.id}`);
+//                                 }}
+//                                 sx={{ color: '#1976d2' }}
+//                               >
+//                                 <Visibility fontSize="small" />
+//                               </IconButton>
+//                             </Tooltip>
+//                             {releve.statut === StatutReleve.BROUILLON && (
+//                               <>
+//                                 <Tooltip title="Calculer la consommation">
+//                                   <IconButton 
+//                                     size="small" 
+//                                     onClick={(e) => {
+//                                       e.stopPropagation();
+//                                       handleCalculerConsommation(releve.id);
+//                                     }}
+//                                     sx={{ color: '#059669' }}
+//                                   >
+//                                     <TrendingUp fontSize="small" />
+//                                   </IconButton>
+//                                 </Tooltip>
+//                                 <Tooltip title="Supprimer">
+//                                   <IconButton 
+//                                     size="small" 
+//                                     onClick={(e) => {
+//                                       e.stopPropagation();
+//                                       setReleveToDelete(releve);
+//                                       setOpenDeleteDialog(true);
+//                                     }}
+//                                     sx={{ color: '#ef4444' }}
+//                                   >
+//                                     <Delete fontSize="small" />
+//                                   </IconButton>
+//                                 </Tooltip>
+//                               </>
+//                             )}
+//                           </Stack>
+//                         </TableCell>
+//                       </TableRow>
+//                     );
+//                   })}
+//                 </TableBody>
+//               </Table>
+//             </TableContainer>
+//           )}
+//         </Container>
+//       </Box>
+
+//       {/* ==================== DIALOGUE CRÉATION ==================== */}
+//       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+//         <DialogTitle sx={{ borderBottom: '1px solid #e2e8f0', pb: 2 }}>
+//           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+//             <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>Nouveau relevé</Typography>
+//             <IconButton size="small" onClick={() => setOpenDialog(false)}>
+//               <Close />
+//             </IconButton>
+//           </Box>
+//         </DialogTitle>
+//         <DialogContent sx={{ p: 3 }}>
+//           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
+//             <Autocomplete
+//               options={logements}
+//               loading={loadingLogements}
+//               value={selectedLogement}
+//               onChange={(_, newValue) => {
+//                 setSelectedLogement(newValue);
+//                 setFormData({ ...formData, logement_id: newValue?.id || '' });
+//               }}
+//               getOptionLabel={(option: any) => `${option.numero} - ${option.batiment_nom || option.adresse || ''}`}
+//               renderInput={(params) => (
+//                 <TextField
+//                   {...params}
+//                   label="Logement *"
+//                   size="small"
+//                   required
+//                   error={!formData.logement_id}
+//                   helperText={!formData.logement_id && "Veuillez sélectionner un logement"}
+//                 />
+//               )}
+//               renderOption={(props, option: any) => (
+//                 <li {...props} key={option.id}>
+//                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+//                     <Avatar src={option.photos?.[0]} sx={{ width: 32, height: 32, borderRadius: 1 }}>
+//                       <Home sx={{ fontSize: 16 }} />
+//                     </Avatar>
+//                     <Box>
+//                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
+//                         {option.numero} - {option.batiment_nom || 'Sans bâtiment'}
+//                       </Typography>
+//                       <Typography variant="caption" color="text.secondary">
+//                         {option.surface ? `${option.surface} m² - ` : ''}
+//                         {option.adresse || ''}
+//                       </Typography>
+//                     </Box>
+//                   </Box>
+//                 </li>
+//               )}
+//               isOptionEqualToValue={(option, value) => option.id === value?.id}
+//               size="small"
+//             />
+
+//             <FormControl fullWidth size="small">
+//               <InputLabel>Type *</InputLabel>
+//               <Select
+//                 value={formData.type_releve}
+//                 label="Type *"
+//                 onChange={(e) => setFormData({ ...formData, type_releve: e.target.value as TypeReleve })}
+//               >
+//                 <MenuItem value={TypeReleve.EAU}>Eau</MenuItem>
+//                 <MenuItem value={TypeReleve.ELECTRICITE}>Électricité</MenuItem>
+//                 <MenuItem value={TypeReleve.GAZ}>Gaz</MenuItem>
+//                 <MenuItem value={TypeReleve.AUTRE}>Autre</MenuItem>
+//               </Select>
+//             </FormControl>
+
+//             <Grid container spacing={2}>
+//               <Grid size={{ xs: 6 }}>
+//                 <TextField
+//                   fullWidth
+//                   size="small"
+//                   type="number"
+//                   label="Index ancien *"
+//                   value={formData.index_ancien}
+//                   onChange={(e) => setFormData({ ...formData, index_ancien: Number(e.target.value) })}
+//                   slotProps={{ htmlInput: { min: 0, step: 1 } }}
+//                 />
+//               </Grid>
+//               <Grid size={{ xs: 6 }}>
+//                 <TextField
+//                   fullWidth
+//                   size="small"
+//                   type="number"
+//                   label="Index nouveau *"
+//                   value={formData.index_nouveau}
+//                   onChange={(e) => setFormData({ ...formData, index_nouveau: Number(e.target.value) })}
+//                   slotProps={{ htmlInput: { min: 0, step: 1 } }}
+//                 />
+//               </Grid>
+//             </Grid>
+
+//             <Grid container spacing={2}>
+//               <Grid size={{ xs: 6 }}>
+//                 <FormControl fullWidth size="small">
+//                   <InputLabel>Mois *</InputLabel>
+//                   <Select
+//                     value={formData.mois}
+//                     label="Mois *"
+//                     onChange={(e) => setFormData({ ...formData, mois: Number(e.target.value) })}
+//                   >
+//                     {moisNoms.map((m, i) => (
+//                       <MenuItem key={i} value={i + 1}>{m}</MenuItem>
+//                     ))}
+//                   </Select>
+//                 </FormControl>
+//               </Grid>
+//               <Grid size={{ xs: 6 }}>
+//                 <TextField
+//                   fullWidth
+//                   size="small"
+//                   type="number"
+//                   label="Année *"
+//                   value={formData.annee}
+//                   onChange={(e) => setFormData({ ...formData, annee: Number(e.target.value) })}
+//                   slotProps={{ htmlInput: { min: 2000, max: 2100 } }}
+//                 />
+//               </Grid>
+//             </Grid>
+
+//             <TextField
+//               fullWidth
+//               size="small"
+//               type="datetime-local"
+//               label="Date du relevé *"
+//               value={formData.date_releve}
+//               onChange={(e) => setFormData({ ...formData, date_releve: e.target.value })}
+//               slotProps={{ inputLabel: { shrink: true } }}
+//             />
+
+//             <TextField
+//               fullWidth
+//               size="small"
+//               label="Notes"
+//               multiline
+//               rows={2}
+//               value={formData.notes}
+//               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+//               placeholder="Observations particulières..."
+//             />
+//           </Box>
+//         </DialogContent>
+//         <DialogActions sx={{ px: 3, pb: 3, borderTop: '1px solid #e2e8f0', pt: 2 }}>
+//           <Button onClick={() => setOpenDialog(false)} variant="outlined">Annuler</Button>
+//           <Button 
+//             variant="contained" 
+//             onClick={handleSubmit} 
+//             disabled={submitting} 
+//             sx={{ bgcolor: '#1976d2' }}
+//           >
+//             {submitting ? 'Création...' : 'Créer le relevé'}
+//           </Button>
+//         </DialogActions>
+//       </Dialog>
+
+//       {/* ==================== DIALOGUE SUPPRESSION ==================== */}
+//       <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} maxWidth="sm" fullWidth>
+//         <DialogTitle sx={{ borderBottom: '1px solid #e2e8f0', pb: 2 }}>
+//           <Typography variant="h6" sx={{ fontWeight: 600, color: '#ef4444' }}>
+//             Confirmer la suppression
+//           </Typography>
+//         </DialogTitle>
+//         <DialogContent sx={{ p: 3 }}>
+//           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+//             <Alert severity="warning" sx={{ borderRadius: 2 }}>
+//               Cette action est irréversible.
+//             </Alert>
+//             <Typography variant="body2">
+//               Êtes-vous sûr de vouloir supprimer le relevé du logement{' '}
+//               <strong>{getLogementInfo(releveToDelete?.logement_id || 0)?.numero || '#' + releveToDelete?.logement_id}</strong> 
+//               {' '}du {releveToDelete && moisNoms[releveToDelete.mois - 1]} {releveToDelete?.annee} ?
+//             </Typography>
+//             {releveToDelete?.est_facture && (
+//               <Alert severity="error" sx={{ borderRadius: 2 }}>
+//                 ⚠️ Ce relevé a déjà été facturé. La suppression n'est pas recommandée.
+//               </Alert>
+//             )}
+//           </Box>
+//         </DialogContent>
+//         <DialogActions sx={{ px: 3, pb: 3, borderTop: '1px solid #e2e8f0', pt: 2 }}>
+//           <Button onClick={() => setOpenDeleteDialog(false)} variant="outlined">Annuler</Button>
+//           <Button 
+//             onClick={handleDelete} 
+//             variant="contained" 
+//             color="error"
+//             disabled={deleting}
+//           >
+//             {deleting ? 'Suppression...' : 'Supprimer'}
+//           </Button>
+//         </DialogActions>
+//       </Dialog>
+
+//       {/* ==================== SNACKBARS ==================== */}
+//       <Snackbar 
+//         open={!!success} 
+//         autoHideDuration={4000} 
+//         onClose={() => setSuccess('')} 
+//         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+//       >
+//         <Alert severity="success" sx={{ borderRadius: 2 }} onClose={() => setSuccess('')}>
+//           {success}
+//         </Alert>
+//       </Snackbar>
+//     </Box>
+//   );
+// }
+
+
+// src/app/releves/page.tsx
+
 'use client';
 
-import { useState, useEffect, Fragment, JSX } from 'react';
+import { useState, useEffect, JSX } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Box, Container, Typography, Button, Grid,
-  CircularProgress, Alert, Chip, IconButton, InputBase, Paper,
+  Box, Container, Typography, Paper, Button, Grid,
+  CircularProgress, Alert, Chip, IconButton, InputBase,
   Card, CardContent, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Avatar, Divider, Stack, Tooltip,
+  TableHead, TableRow, Avatar, Stack, Tooltip,
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, MenuItem, FormControl, InputLabel, Select,
-  Snackbar, Autocomplete
+  Snackbar, Autocomplete, LinearProgress
 } from '@mui/material';
 import {
   Add, Search, WaterDrop, ElectricBolt, TrendingUp,
-  Assessment, Close, Refresh, ChevronLeft, ChevronRight,
-  Receipt, CheckCircle, Warning, Schedule, Visibility, Home
+  Close, Refresh, ChevronLeft, ChevronRight,
+  Receipt, CheckCircle, Warning, Schedule, Visibility,
+  Home, Delete, Edit
 } from '@mui/icons-material';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -23,11 +820,13 @@ import { logementService } from '@/services/logementService';
 import { TypeReleve, StatutReleve, Releve } from '@/types/releve';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 
+// ==================== CONSTANTES ====================
+
 const typeLabels: Record<TypeReleve, { label: string; icon: JSX.Element; color: string; bg: string }> = {
   [TypeReleve.EAU]: { label: 'Eau', icon: <WaterDrop sx={{ fontSize: 14 }} />, color: '#3b82f6', bg: '#eff6ff' },
   [TypeReleve.ELECTRICITE]: { label: 'Électricité', icon: <ElectricBolt sx={{ fontSize: 14 }} />, color: '#f59e0b', bg: '#fffbeb' },
   [TypeReleve.GAZ]: { label: 'Gaz', icon: <TrendingUp sx={{ fontSize: 14 }} />, color: '#10b981', bg: '#f0fdf4' },
-  [TypeReleve.AUTRE]: { label: 'Autre', icon: <Assessment sx={{ fontSize: 14 }} />, color: '#64748b', bg: '#f8fafc' }
+  [TypeReleve.AUTRE]: { label: 'Autre', icon: <TrendingUp sx={{ fontSize: 14 }} />, color: '#64748b', bg: '#f8fafc' }
 };
 
 const statutLabels: Record<StatutReleve, { label: string; color: string; bg: string; icon: JSX.Element }> = {
@@ -37,8 +836,14 @@ const statutLabels: Record<StatutReleve, { label: string; color: string; bg: str
   [StatutReleve.CONTESTE]: { label: 'Contesté', color: '#ef4444', bg: '#fef2f2', icon: <Warning sx={{ fontSize: 12 }} /> }
 };
 
+const moisNoms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+// ==================== COMPOSANT PRINCIPAL ====================
+
 export default function RelevesPage() {
   const router = useRouter();
+  
+  // États
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingLogements, setLoadingLogements] = useState(false);
@@ -47,10 +852,24 @@ export default function RelevesPage() {
   const [annee, setAnnee] = useState(new Date().getFullYear());
   const [search, setSearch] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [success, setSuccess] = useState('');
+  
+  // Filtres
   const [selectedType, setSelectedType] = useState<TypeReleve | 'all'>('all');
   const [selectedStatut, setSelectedStatut] = useState<StatutReleve | 'all'>('all');
+  const [selectedLogementFilter, setSelectedLogementFilter] = useState<number | 'all'>('all');
+  
+  // Dialogue création
+  const [openDialog, setOpenDialog] = useState(false);
   const [selectedLogement, setSelectedLogement] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Dialogue suppression
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [releveToDelete, setReleveToDelete] = useState<Releve | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Formulaire
   const [formData, setFormData] = useState({
     logement_id: '',
     type_releve: TypeReleve.EAU,
@@ -61,19 +880,24 @@ export default function RelevesPage() {
     date_releve: new Date().toISOString().slice(0, 16),
     notes: ''
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [expandedRow, setExpandedRow] = useState<number | null>(null);
+
+  // ==================== EFFETS ====================
 
   useEffect(() => {
     fetchData();
     fetchLogements();
   }, [annee]);
 
+  // ==================== FONCTIONS API ====================
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await releveService.getAll({ annee });
+      const params: any = { annee };
+      if (selectedLogementFilter !== 'all') params.logement_id = selectedLogementFilter;
+      if (selectedType !== 'all') params.type_releve = selectedType;
+      
+      const data = await releveService.getAll(params);
       setReleves(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err) {
@@ -87,7 +911,7 @@ export default function RelevesPage() {
   const fetchLogements = async () => {
     setLoadingLogements(true);
     try {
-      const data = await logementService.getAll({ limit: 500 });
+      const data = await logementService.getOccupes();
       setLogements(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Erreur chargement logements:', err);
@@ -102,8 +926,10 @@ export default function RelevesPage() {
       setError('Veuillez sélectionner un logement');
       return;
     }
+    
     const ancien = Number(formData.index_ancien);
     const nouveau = Number(formData.index_nouveau);
+    
     if (nouveau < ancien) {
       setError('Le nouvel index doit être supérieur à l\'ancien');
       return;
@@ -111,7 +937,7 @@ export default function RelevesPage() {
 
     setSubmitting(true);
     try {
-      const payload = {
+      await releveService.create({
         logement_id: Number(formData.logement_id),
         type_releve: formData.type_releve,
         index_ancien: ancien,
@@ -120,21 +946,48 @@ export default function RelevesPage() {
         annee: Number(formData.annee),
         date_releve: new Date(formData.date_releve).toISOString(),
         notes: formData.notes || undefined
-      };
+      });
       
-      await releveService.create(payload);
       setSuccess('Relevé créé avec succès');
       setOpenDialog(false);
       resetForm();
       fetchData();
     } catch (err: any) {
-      console.error('Erreur création:', err);
       const errorDetail = err?.response?.data?.detail || err?.message || 'Erreur lors de la création';
       setError(typeof errorDetail === 'string' ? errorDetail : JSON.stringify(errorDetail));
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleDelete = async () => {
+    if (!releveToDelete) return;
+    
+    setDeleting(true);
+    try {
+      await releveService.deleteReleve(releveToDelete.id);
+      setSuccess('Relevé supprimé avec succès');
+      setOpenDeleteDialog(false);
+      setReleveToDelete(null);
+      fetchData();
+    } catch (err: any) {
+      setError(err?.message || 'Erreur lors de la suppression');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleCalculerConsommation = async (releveId: number) => {
+    try {
+      const result = await releveService.calculerConsommation(releveId);
+      setSuccess(`Consommation calculée: ${result.consommation} - ${formatCurrency(result.montant)}`);
+      fetchData();
+    } catch (err) {
+      setError('Erreur lors du calcul');
+    }
+  };
+
+  // ==================== UTILITAIRES ====================
 
   const resetForm = () => {
     setFormData({
@@ -150,14 +1003,14 @@ export default function RelevesPage() {
     setSelectedLogement(null);
   };
 
+  const clearSearch = () => setSearch('');
+
   const getLogementInfo = (logementId: number) => {
     return logements.find(l => l.id === logementId);
   };
 
-  const clearSearch = () => setSearch('');
+  // ==================== FILTRAGE ====================
 
-  const moisNoms = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-  
   const filteredReleves = releves.filter(r => {
     const logement = getLogementInfo(r.logement_id);
     const searchLower = search.toLowerCase();
@@ -170,10 +1023,14 @@ export default function RelevesPage() {
     return r.annee === annee && matchSearch && matchType && matchStatut;
   });
 
+  // ==================== STATISTIQUES ====================
+
   const totalEau = filteredReleves.filter(r => r.type_releve === TypeReleve.EAU).length;
   const totalElec = filteredReleves.filter(r => r.type_releve === TypeReleve.ELECTRICITE).length;
   const totalMontant = filteredReleves.reduce((sum, r) => sum + (r.montant || 0), 0);
-  const totalConsommation = filteredReleves.reduce((sum, r) => sum + (r.consommation || 0), 0);
+  const totalBrouillon = filteredReleves.filter(r => r.statut === StatutReleve.BROUILLON).length;
+
+  // ==================== RENDU ====================
 
   if (loading) {
     return (
@@ -181,7 +1038,7 @@ export default function RelevesPage() {
         <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
         <Box component="main" sx={{ flexGrow: 1 }}>
           <Header onMenuClick={() => setMobileOpen(!mobileOpen)} />
-          <Container sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
             <CircularProgress size={40} />
           </Container>
         </Box>
@@ -197,26 +1054,26 @@ export default function RelevesPage() {
         
         <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 2.5 }, mt: { xs: 7, sm: 8 } }}>
           
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a1a', mb: 0.5 }}>
-              Relevés JIRAMA
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#757575' }}>
-              Gestion des relevés d'eau et d'électricité
-            </Typography>
+          {/* En-tête */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5, flexWrap: 'wrap', gap: 2 }}>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>Relevés JIRAMA</Typography>
+              <Typography variant="caption" color="text.secondary">Gestion des relevés d'eau et d'électricité</Typography>
+            </Box>
+            <Button variant="contained" startIcon={<Add />} onClick={() => setOpenDialog(true)} sx={{ textTransform: 'none' }}>
+              Nouveau relevé
+            </Button>
           </Box>
 
-          {/* Stats Cards */}
+          {/* Statistiques */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid size={{ xs: 6, sm: 3 }}>
               <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
                 <CardContent sx={{ p: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: '#eff6ff' }}>
-                      <WaterDrop sx={{ color: '#3b82f6', fontSize: 20 }} />
-                    </Box>
+                    <WaterDrop sx={{ color: '#3b82f6' }} />
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Relevés eau</Typography>
+                      <Typography variant="caption" color="text.secondary">Eau</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalEau}</Typography>
                     </Box>
                   </Box>
@@ -227,11 +1084,9 @@ export default function RelevesPage() {
               <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
                 <CardContent sx={{ p: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: '#fffbeb' }}>
-                      <ElectricBolt sx={{ color: '#f59e0b', fontSize: 20 }} />
-                    </Box>
+                    <ElectricBolt sx={{ color: '#f59e0b' }} />
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Relevés électricité</Typography>
+                      <Typography variant="caption" color="text.secondary">Électricité</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalElec}</Typography>
                     </Box>
                   </Box>
@@ -242,12 +1097,10 @@ export default function RelevesPage() {
               <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
                 <CardContent sx={{ p: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: '#f0fdf4' }}>
-                      <TrendingUp sx={{ color: '#10b981', fontSize: 20 }} />
-                    </Box>
+                    <Schedule sx={{ color: '#f59e0b' }} />
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Consommation totale</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalConsommation.toFixed(0)}</Typography>
+                      <Typography variant="caption" color="text.secondary">Brouillons</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalBrouillon}</Typography>
                     </Box>
                   </Box>
                 </CardContent>
@@ -257,9 +1110,7 @@ export default function RelevesPage() {
               <Card sx={{ borderRadius: 2, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
                 <CardContent sx={{ p: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{ p: 1, borderRadius: 1, bgcolor: '#fef2f2' }}>
-                      <Receipt sx={{ color: '#ef4444', fontSize: 20 }} />
-                    </Box>
+                    <Receipt sx={{ color: '#10b981' }} />
                     <Box>
                       <Typography variant="caption" color="text.secondary">Montant total</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 700 }}>{formatCurrency(totalMontant)}</Typography>
@@ -270,44 +1121,36 @@ export default function RelevesPage() {
             </Grid>
           </Grid>
 
-          {/* Search and Filters Bar */}
-          <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          {/* Barre de recherche */}
+          <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e2e8f0' }}>
+            <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, position: 'relative' }}>
                 <Search sx={{ position: 'absolute', left: 12, color: '#94a3b8', fontSize: 18 }} />
                 <InputBase
-                  placeholder="Rechercher par logement, type ou statut..."
+                  placeholder="Rechercher..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  sx={{ 
-                    pl: 4.5, pr: 3, py: 1, width: '100%', fontSize: '0.85rem',
-                    bgcolor: '#f8fafc', borderRadius: 2,
-                    '& input': { p: 0 }
-                  }}
+                  sx={{ pl: 4.5, pr: 3, py: 1, width: '100%', bgcolor: '#f8fafc', borderRadius: 2 }}
                 />
                 {search && (
                   <IconButton size="small" onClick={clearSearch} sx={{ position: 'absolute', right: 8 }}>
-                    <Close sx={{ fontSize: 16, color: '#94a3b8' }} />
+                    <Close sx={{ fontSize: 16 }} />
                   </IconButton>
                 )}
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <IconButton size="small" onClick={() => setAnnee(annee - 1)} sx={{ bgcolor: '#f1f5f9' }}>
-                  <ChevronLeft fontSize="small" />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <IconButton size="small" onClick={() => setAnnee(annee - 1)}>
+                  <ChevronLeft />
                 </IconButton>
-                <Typography variant="body1" sx={{ fontWeight: 600, minWidth: 60, textAlign: 'center' }}>{annee}</Typography>
-                <IconButton size="small" onClick={() => setAnnee(annee + 1)} sx={{ bgcolor: '#f1f5f9' }}>
-                  <ChevronRight fontSize="small" />
+                <Typography sx={{ fontWeight: 600, minWidth: 60, textAlign: 'center' }}>{annee}</Typography>
+                <IconButton size="small" onClick={() => setAnnee(annee + 1)}>
+                  <ChevronRight />
                 </IconButton>
               </Box>
 
               <FormControl size="small" sx={{ minWidth: 130 }}>
-                <Select
-                  value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value as TypeReleve | 'all')}
-                  displayEmpty
-                >
+                <Select value={selectedType} onChange={(e) => setSelectedType(e.target.value as TypeReleve | 'all')} displayEmpty>
                   <MenuItem value="all">Tous types</MenuItem>
                   <MenuItem value={TypeReleve.EAU}>Eau</MenuItem>
                   <MenuItem value={TypeReleve.ELECTRICITE}>Électricité</MenuItem>
@@ -315,11 +1158,7 @@ export default function RelevesPage() {
               </FormControl>
 
               <FormControl size="small" sx={{ minWidth: 140 }}>
-                <Select
-                  value={selectedStatut}
-                  onChange={(e) => setSelectedStatut(e.target.value as StatutReleve | 'all')}
-                  displayEmpty
-                >
+                <Select value={selectedStatut} onChange={(e) => setSelectedStatut(e.target.value as StatutReleve | 'all')} displayEmpty>
                   <MenuItem value="all">Tous statuts</MenuItem>
                   <MenuItem value={StatutReleve.BROUILLON}>Brouillon</MenuItem>
                   <MenuItem value={StatutReleve.VALIDE}>Validé</MenuItem>
@@ -331,21 +1170,12 @@ export default function RelevesPage() {
               <IconButton onClick={fetchData} sx={{ bgcolor: '#f1f5f9' }}>
                 <Refresh fontSize="small" />
               </IconButton>
-
-              <Button 
-                variant="contained" 
-                startIcon={<Add />} 
-                onClick={() => setOpenDialog(true)} 
-                sx={{ bgcolor: '#1976d2', borderRadius: 1.5, textTransform: 'none', fontSize: '0.75rem', py: 0.8, px: 2 }}
-              >
-                Nouveau relevé
-              </Button>
-            </Box>
+            </Stack>
 
             {(selectedType !== 'all' || selectedStatut !== 'all') && (
               <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
                 {selectedType !== 'all' && (
-                  <Chip label={selectedType === TypeReleve.EAU ? 'Eau' : 'Électricité'} size="small" onDelete={() => setSelectedType('all')} />
+                  <Chip label={typeLabels[selectedType].label} size="small" onDelete={() => setSelectedType('all')} />
                 )}
                 {selectedStatut !== 'all' && (
                   <Chip label={statutLabels[selectedStatut].label} size="small" onDelete={() => setSelectedStatut('all')} />
@@ -354,33 +1184,26 @@ export default function RelevesPage() {
             )}
           </Paper>
 
-          {/* Error Alert */}
+          {/* Alertes */}
           {error && (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>
               {error}
             </Alert>
           )}
 
-          {/* Tableau des relevés */}
+          {/* Tableau */}
           {filteredReleves.length === 0 ? (
             <Paper sx={{ textAlign: 'center', py: 6, borderRadius: 2 }}>
               <WaterDrop sx={{ fontSize: 48, color: '#cbd5e1', mb: 1 }} />
               <Typography variant="body1" sx={{ color: '#64748b', mb: 1 }}>
-                {search || selectedType !== 'all' || selectedStatut !== 'all' 
-                  ? 'Aucun résultat ne correspond à vos critères'
-                  : `Aucun relevé pour l'année ${annee}`}
+                Aucun relevé trouvé
               </Typography>
-              <Button 
-                variant="contained" 
-                startIcon={<Add />} 
-                onClick={() => setOpenDialog(true)} 
-                sx={{ bgcolor: '#1976d2', mt: 1 }}
-              >
+              <Button variant="contained" startIcon={<Add />} onClick={() => setOpenDialog(true)} sx={{ textTransform: 'none' }}>
                 Ajouter un relevé
               </Button>
             </Paper>
           ) : (
-            <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+            <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
               <Table size="small">
                 <TableHead sx={{ bgcolor: '#f8fafc' }}>
                   <TableRow>
@@ -400,12 +1223,7 @@ export default function RelevesPage() {
                     const logement = getLogementInfo(releve.logement_id);
                     
                     return (
-                      <TableRow 
-                        key={releve.id} 
-                        hover 
-                        sx={{ cursor: 'pointer' }}
-                        onClick={() => router.push(`/releves/${releve.id}`)}
-                      >
+                      <TableRow key={releve.id} hover>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Avatar sx={{ width: 28, height: 28, bgcolor: '#e2e8f0', fontSize: '0.7rem' }}>
@@ -417,40 +1235,38 @@ export default function RelevesPage() {
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Chip size="small" icon={typeInfo.icon} label={typeInfo.label} sx={{ height: 22, bgcolor: typeInfo.bg, color: typeInfo.color }} />
+                          <Chip size="small" icon={typeInfo.icon} label={typeInfo.label} sx={{ bgcolor: typeInfo.bg, color: typeInfo.color }} />
                         </TableCell>
-                        <TableCell>
-                          {moisNoms[releve.mois - 1]} {releve.annee}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {(releve.consommation || 0).toFixed(2)} {releve.type_releve === TypeReleve.EAU ? 'm³' : 'kWh'}
-                          </Typography>
-                        </TableCell>
+                        <TableCell>{moisNoms[releve.mois - 1]} {releve.annee}</TableCell>
+                        <TableCell>{(releve.consommation || 0).toFixed(2)}</TableCell>
                         <TableCell sx={{ fontWeight: 600, color: '#2e7d32' }}>
                           {formatCurrency(releve.montant || 0)}
                         </TableCell>
                         <TableCell>
-                          <Chip 
-                            icon={statutInfo.icon}
-                            label={statutInfo.label} 
-                            size="small" 
-                            sx={{ height: 22, bgcolor: statutInfo.bg, color: statutInfo.color }} 
-                          />
+                          <Chip icon={statutInfo.icon} label={statutInfo.label} size="small" sx={{ bgcolor: statutInfo.bg, color: statutInfo.color }} />
                         </TableCell>
                         <TableCell align="center">
-                          <Tooltip title="Voir les détails et statistiques">
-                            <IconButton 
-                              size="small" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/releves/${releve.id}`);
-                              }}
-                              sx={{ color: '#1976d2' }}
-                            >
-                              <Visibility fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'center' }}>
+                            <Tooltip title="Voir">
+                              <IconButton size="small" onClick={() => router.push(`/releves/${releve.id}`)}>
+                                <Visibility fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            {releve.statut === StatutReleve.BROUILLON && (
+                              <>
+                                <Tooltip title="Calculer">
+                                  <IconButton size="small" onClick={() => handleCalculerConsommation(releve.id)} sx={{ color: '#059669' }}>
+                                    <TrendingUp fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Supprimer">
+                                  <IconButton size="small" onClick={() => { setReleveToDelete(releve); setOpenDeleteDialog(true); }} sx={{ color: '#ef4444' }}>
+                                    <Delete fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            )}
+                          </Stack>
                         </TableCell>
                       </TableRow>
                     );
@@ -462,14 +1278,12 @@ export default function RelevesPage() {
         </Container>
       </Box>
 
-      {/* Dialog création relevé */}
+      {/* Dialogue Création */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ borderBottom: '1px solid #e2e8f0', pb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>Nouveau relevé</Typography>
-            <IconButton size="small" onClick={() => setOpenDialog(false)}>
-              <Close />
-            </IconButton>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>Nouveau relevé</Typography>
+            <IconButton size="small" onClick={() => setOpenDialog(false)}><Close /></IconButton>
           </Box>
         </DialogTitle>
         <DialogContent sx={{ p: 3 }}>
@@ -482,34 +1296,9 @@ export default function RelevesPage() {
                 setSelectedLogement(newValue);
                 setFormData({ ...formData, logement_id: newValue?.id || '' });
               }}
-              getOptionLabel={(option: any) => `${option.numero} - ${option.batiment_nom || option.adresse || ''}`}
+              getOptionLabel={(option: any) => `${option.numero} - ${option.batiment_nom || ''}`}
               renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Logement *"
-                  size="small"
-                  required
-                  error={!formData.logement_id}
-                  helperText={!formData.logement_id && "Veuillez sélectionner un logement"}
-                />
-              )}
-              renderOption={(props, option: any) => (
-                <li {...props} key={option.id}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
-                    <Avatar src={option.photos?.[0]} sx={{ width: 32, height: 32, borderRadius: 1 }}>
-                      <Home sx={{ fontSize: 16 }} />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {option.numero} - {option.batiment_nom || 'Sans bâtiment'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {option.surface ? `${option.surface} m² - ` : ''}
-                        {option.adresse || ''}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </li>
+                <TextField {...params} label="Logement *" size="small" required error={!formData.logement_id} />
               )}
               isOptionEqualToValue={(option, value) => option.id === value?.id}
               size="small"
@@ -517,11 +1306,7 @@ export default function RelevesPage() {
 
             <FormControl fullWidth size="small">
               <InputLabel>Type *</InputLabel>
-              <Select
-                value={formData.type_releve}
-                label="Type *"
-                onChange={(e) => setFormData({ ...formData, type_releve: e.target.value as TypeReleve })}
-              >
+              <Select value={formData.type_releve} label="Type *" onChange={(e) => setFormData({ ...formData, type_releve: e.target.value as TypeReleve })}>
                 <MenuItem value={TypeReleve.EAU}>Eau</MenuItem>
                 <MenuItem value={TypeReleve.ELECTRICITE}>Électricité</MenuItem>
               </Select>
@@ -529,24 +1314,10 @@ export default function RelevesPage() {
 
             <Grid container spacing={2}>
               <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  label="Index ancien *"
-                  value={formData.index_ancien}
-                  onChange={(e) => setFormData({ ...formData, index_ancien: Number(e.target.value) })}
-                />
+                <TextField fullWidth size="small" type="number" label="Index ancien *" value={formData.index_ancien} onChange={(e) => setFormData({ ...formData, index_ancien: Number(e.target.value) })} />
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  label="Index nouveau *"
-                  value={formData.index_nouveau}
-                  onChange={(e) => setFormData({ ...formData, index_nouveau: Number(e.target.value) })}
-                />
+                <TextField fullWidth size="small" type="number" label="Index nouveau *" value={formData.index_nouveau} onChange={(e) => setFormData({ ...formData, index_nouveau: Number(e.target.value) })} />
               </Grid>
             </Grid>
 
@@ -554,62 +1325,50 @@ export default function RelevesPage() {
               <Grid size={{ xs: 6 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Mois *</InputLabel>
-                  <Select
-                    value={formData.mois}
-                    label="Mois *"
-                    onChange={(e) => setFormData({ ...formData, mois: Number(e.target.value) })}
-                  >
-                    {moisNoms.map((m, i) => (
-                      <MenuItem key={i} value={i + 1}>{m}</MenuItem>
-                    ))}
+                  <Select value={formData.mois} label="Mois *" onChange={(e) => setFormData({ ...formData, mois: Number(e.target.value) })}>
+                    {moisNoms.map((m, i) => <MenuItem key={i} value={i + 1}>{m}</MenuItem>)}
                   </Select>
                 </FormControl>
               </Grid>
               <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  label="Année *"
-                  value={formData.annee}
-                  onChange={(e) => setFormData({ ...formData, annee: Number(e.target.value) })}
-                />
+                <TextField fullWidth size="small" type="number" label="Année *" value={formData.annee} onChange={(e) => setFormData({ ...formData, annee: Number(e.target.value) })} />
               </Grid>
             </Grid>
 
-            <TextField
-              fullWidth
-              size="small"
-              type="datetime-local"
-              label="Date du relevé *"
-              value={formData.date_releve}
-              onChange={(e) => setFormData({ ...formData, date_releve: e.target.value })}
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
-
-            <TextField
-              fullWidth
-              size="small"
-              label="Notes"
-              multiline
-              rows={2}
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Observations particulières..."
-            />
+            <TextField fullWidth size="small" type="datetime-local" label="Date du relevé *" value={formData.date_releve} onChange={(e) => setFormData({ ...formData, date_releve: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
+            <TextField fullWidth size="small" label="Notes" multiline rows={2} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, borderTop: '1px solid #e2e8f0', pt: 2 }}>
           <Button onClick={() => setOpenDialog(false)} variant="outlined">Annuler</Button>
-          <Button variant="contained" onClick={handleSubmit} disabled={submitting} sx={{ bgcolor: '#1976d2' }}>
-            {submitting ? 'Création...' : 'Créer le relevé'}
+          <Button variant="contained" onClick={handleSubmit} disabled={submitting} sx={{ textTransform: 'none' }}>
+            {submitting ? 'Création...' : 'Créer'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialogue Suppression */}
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ borderBottom: '1px solid #e2e8f0', pb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: '#ef4444' }}>Confirmer la suppression</Typography>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Alert severity="warning" sx={{ mb: 2 }}>Cette action est irréversible.</Alert>
+          <Typography variant="body2">
+            Supprimer le relevé du {releveToDelete && moisNoms[releveToDelete.mois - 1]} {releveToDelete?.annee} ?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, borderTop: '1px solid #e2e8f0', pt: 2 }}>
+          <Button onClick={() => setOpenDeleteDialog(false)} variant="outlined">Annuler</Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={deleting}>
+            {deleting ? 'Suppression...' : 'Supprimer'}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Snackbar */}
       <Snackbar open={!!success} autoHideDuration={4000} onClose={() => setSuccess('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert severity="success" sx={{ borderRadius: 2 }}>{success}</Alert>
+        <Alert severity="success" onClose={() => setSuccess('')}>{success}</Alert>
       </Snackbar>
     </Box>
   );
