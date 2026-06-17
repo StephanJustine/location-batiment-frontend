@@ -15,21 +15,40 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  InputAdornment,
-  Chip,
-  Autocomplete,
-  Paper
+  InputAdornment
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { TypeTravaux, StatutTravaux } from '@/types/travaux';
-import { logementService, Logement } from '@/services/logementService';
+import { logementService } from '@/services/logementService';
+
+interface TravauxFormData {
+  logement_id: number;
+  type_travaux: string;
+  description: string;
+  statut: string;
+  date_debut?: string;
+  date_fin?: string;
+  cout_estime?: number;
+  cout_reel?: number;
+  prestataire?: string;
+}
 
 interface TravauxFormProps {
   initialData?: any;
   logementId?: number;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: TravauxFormData) => Promise<void>;
   onCancel?: () => void;
   isEditing?: boolean;
+}
+
+interface LogementSimple {
+  id: number;
+  numero: string;
+  type: string;
+  surface: number;
+  statut: string;
+  batiment_nom?: string;
+  batiment_id: number;
 }
 
 const TravauxForm: React.FC<TravauxFormProps> = ({
@@ -41,10 +60,10 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [logements, setLogements] = useState<Logement[]>([]);
+  const [logements, setLogements] = useState<LogementSimple[]>([]);
   const [loadingLogements, setLoadingLogements] = useState(false);
 
-  const { control, handleSubmit, watch, formState: { errors } } = useForm({
+  const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
       logement_id: initialData?.logement_id || logementId || '',
       type_travaux: initialData?.type_travaux || TypeTravaux.MAINTENANCE,
@@ -60,14 +79,14 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
 
   useEffect(() => {
     if (!logementId) {
-      fetchLogements();
+      fetchAllLogements();
     }
   }, [logementId]);
 
-  const fetchLogements = async () => {
+  const fetchAllLogements = async () => {
     try {
       setLoadingLogements(true);
-      const data = await logementService.getDisponibles();
+      const data = await logementService.getAllLogementsSimple();
       setLogements(data);
     } catch (error) {
       console.error('Erreur chargement logements:', error);
@@ -81,18 +100,51 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
       setLoading(true);
       setError(null);
       
-      const formData = {
-        ...data,
+      const formData: TravauxFormData = {
         logement_id: Number(data.logement_id),
-        date_debut: data.date_debut || null,
-        date_fin: data.date_fin || null,
-        cout_estime: data.cout_estime || 0,
-        cout_reel: data.cout_reel || 0
+        type_travaux: data.type_travaux,
+        description: data.description,
+        statut: data.statut || 'planifie'
       };
+
+      // Formatage des dates au format ISO avec T
+      if (data.date_debut && data.date_debut !== '') {
+        formData.date_debut = `${data.date_debut}T00:00:00`;
+      }
+      if (data.date_fin && data.date_fin !== '') {
+        formData.date_fin = `${data.date_fin}T00:00:00`;
+      }
+      
+      if (data.cout_estime && Number(data.cout_estime) > 0) {
+        formData.cout_estime = Number(data.cout_estime);
+      }
+      if (data.cout_reel && Number(data.cout_reel) > 0) {
+        formData.cout_reel = Number(data.cout_reel);
+      }
+      if (data.prestataire && data.prestataire !== '') {
+        formData.prestataire = data.prestataire;
+      }
+
+      console.log('📤 Envoi des données:', formData);
       
       await onSubmit(formData);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Erreur lors de la soumission');
+    } catch (err: unknown) {
+      let errorMessage = 'Erreur lors de la soumission';
+      
+      if (err && typeof err === 'object' && 'response' in err) {
+        const error = err as { response?: { data?: { detail?: string; message?: string } } };
+        if (error.response?.data?.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      setError(errorMessage);
       console.error('Form submission error:', err);
       throw err;
     } finally {
@@ -112,39 +164,36 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
 
   return (
     <Box sx={{ pt: 2 }}>
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
 
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Grid container spacing={2.5}>
-          {/* Logement - seulement si pas déjà défini */}
+          {/* Logement */}
           {!logementId && (
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Controller
                 name="logement_id"
                 control={control}
                 rules={{ required: 'Le logement est requis' }}
                 render={({ field }) => (
-                  <FormControl fullWidth error={!!errors.logement_id}>
+                  <FormControl fullWidth size="small" error={!!errors.logement_id}>
                     <InputLabel>Logement *</InputLabel>
-                    <Select
-                      {...field}
-                      label="Logement *"
+                    <Select 
+                      {...field} 
+                      label="Logement *" 
                       disabled={loadingLogements}
+                      value={field.value || ''}
                     >
                       {logements.map((logement) => (
                         <MenuItem key={logement.id} value={logement.id}>
-                          {logement.numero} - {logement.type} ({logement.surface} m²)
+                          {logement.batiment_nom && `${logement.batiment_nom} - `}
+                          {logement.numero} ({logement.type}) {logement.surface}m²
+                          {logement.statut === 'occupe' ? ' 🟢 Occupé' : ' 🔵 Libre'}
                         </MenuItem>
                       ))}
                     </Select>
                     {errors.logement_id && (
-                      <Typography variant="caption" color="error">
-                        {errors.logement_id.message}
-                      </Typography>
+                      <Typography variant="caption" color="error">{String(errors.logement_id.message)}</Typography>
                     )}
                   </FormControl>
                 )}
@@ -152,26 +201,22 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
             </Grid>
           )}
 
-          {/* Type de travaux */}
-          <Grid item xs={12} sm={6}>
+          {/* Type */}
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="type_travaux"
               control={control}
               rules={{ required: 'Le type est requis' }}
               render={({ field }) => (
-                <FormControl fullWidth error={!!errors.type_travaux}>
-                  <InputLabel>Type de travaux *</InputLabel>
-                  <Select {...field} label="Type de travaux *">
+                <FormControl fullWidth size="small" error={!!errors.type_travaux}>
+                  <InputLabel>Type *</InputLabel>
+                  <Select {...field} label="Type *">
                     {typeOptions.map((type) => (
-                      <MenuItem key={type.value} value={type.value}>
-                        {type.label}
-                      </MenuItem>
+                      <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
                     ))}
                   </Select>
                   {errors.type_travaux && (
-                    <Typography variant="caption" color="error">
-                      {errors.type_travaux.message}
-                    </Typography>
+                    <Typography variant="caption" color="error">{String(errors.type_travaux.message)}</Typography>
                   )}
                 </FormControl>
               )}
@@ -179,18 +224,16 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
           </Grid>
 
           {/* Statut */}
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="statut"
               control={control}
               render={({ field }) => (
-                <FormControl fullWidth>
+                <FormControl fullWidth size="small">
                   <InputLabel>Statut</InputLabel>
                   <Select {...field} label="Statut">
                     {statutOptions.map((statut) => (
-                      <MenuItem key={statut.value} value={statut.value}>
-                        {statut.label}
-                      </MenuItem>
+                      <MenuItem key={statut.value} value={statut.value}>{statut.label}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
@@ -199,7 +242,7 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
           </Grid>
 
           {/* Description */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Controller
               name="description"
               control={control}
@@ -209,51 +252,54 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
                   {...field}
                   label="Description *"
                   multiline
-                  rows={3}
+                  rows={2}
                   fullWidth
+                  size="small"
                   error={!!errors.description}
-                  helperText={errors.description?.message}
-                  placeholder="Décrivez les travaux à effectuer..."
+                  helperText={errors.description ? String(errors.description.message) : ''}
+                  placeholder="Décrivez les travaux..."
                 />
               )}
             />
           </Grid>
 
           {/* Dates */}
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="date_debut"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Date de début"
+                  label="Début"
                   type="date"
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  size="small"
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
               )}
             />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="date_fin"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Date de fin prévue"
+                  label="Fin prévue"
                   type="date"
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  size="small"
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
               )}
             />
           </Grid>
 
           {/* Coûts */}
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="cout_estime"
               control={control}
@@ -263,9 +309,10 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
                   label="Coût estimé (Ar)"
                   type="number"
                   fullWidth
-                  InputProps={{
-                    inputProps: { min: 0, step: 1000 },
-                    startAdornment: <InputAdornment position="start">Ar</InputAdornment>
+                  size="small"
+                  slotProps={{
+                    htmlInput: { min: 0, step: 1000 },
+                    input: { startAdornment: <InputAdornment position="start">Ar</InputAdornment> }
                   }}
                   onChange={(e) => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}
                 />
@@ -273,7 +320,7 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
             />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Controller
               name="cout_reel"
               control={control}
@@ -283,9 +330,10 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
                   label="Coût réel (Ar)"
                   type="number"
                   fullWidth
-                  InputProps={{
-                    inputProps: { min: 0, step: 1000 },
-                    startAdornment: <InputAdornment position="start">Ar</InputAdornment>
+                  size="small"
+                  slotProps={{
+                    htmlInput: { min: 0, step: 1000 },
+                    input: { startAdornment: <InputAdornment position="start">Ar</InputAdornment> }
                   }}
                   onChange={(e) => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}
                 />
@@ -294,41 +342,35 @@ const TravauxForm: React.FC<TravauxFormProps> = ({
           </Grid>
 
           {/* Prestataire */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Controller
               name="prestataire"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Prestataire / Entreprise"
+                  label="Prestataire"
                   fullWidth
-                  placeholder="Nom de l'entreprise ou du prestataire"
+                  size="small"
+                  placeholder="Nom du prestataire"
                 />
               )}
             />
           </Grid>
 
           {/* Actions */}
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Divider sx={{ my: 1 }} />
-            <Box display="flex" gap={2} justifyContent="flex-end">
-              {onCancel && (
-                <Button onClick={onCancel} disabled={loading}>
-                  Annuler
-                </Button>
-              )}
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              {onCancel && <Button onClick={onCancel} disabled={loading}>Annuler</Button>}
               <Button
                 type="submit"
                 variant="contained"
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={20} /> : null}
-                sx={{
-                  bgcolor: '#2e7d32',
-                  '&:hover': { bgcolor: '#1b5e20' }
-                }}
+                sx={{ bgcolor: '#2e7d32', '&:hover': { bgcolor: '#1b5e20' } }}
               >
-                {isEditing ? 'Mettre à jour' : 'Créer'}
+                {loading ? 'En cours...' : (isEditing ? 'Mettre à jour' : 'Créer')}
               </Button>
             </Box>
           </Grid>
