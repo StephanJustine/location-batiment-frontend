@@ -1000,11 +1000,11 @@ export default function PaiementsPage() {
               <Button variant="outlined" size="small" startIcon={<Refresh />} onClick={() => { fetchData(); fetchImpayes(); fetchPaiementsParLocataire(); fetchAllPaiements(); }} sx={{ borderRadius: 2, textTransform: 'none' }}>
                 Rafraîchir
               </Button>
-              {!showForm && (
+              {/* {!showForm && (
                 <Button variant="contained" size="small" startIcon={<Add />} onClick={() => setShowForm(true)} sx={{ borderRadius: 2, textTransform: 'none', bgcolor: '#059669', '&:hover': { bgcolor: '#047857' } }}>
                   Nouveau paiement
                 </Button>
-              )}
+              )} */}
             </Box>
           </Box>
 

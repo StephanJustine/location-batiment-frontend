@@ -43,14 +43,14 @@ export default function BailPaiementSection({ bailId, cautionMontant, onRefresh 
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      {/* <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6">Paiements et caution</Typography>
         {!showForm && (
           <Button size="small" startIcon={<Add />} onClick={() => setShowForm(true)}>
             Nouveau paiement
           </Button>
         )}
-      </Box>
+      </Box> */}
 
       <CautionManagement 
         bailId={bailId} 

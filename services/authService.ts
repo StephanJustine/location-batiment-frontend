@@ -29,6 +29,19 @@ export const authService = {
     return response.data;
   },
 
+  /**
+ * Changer le mot de passe
+ */
+  async changePassword(data: { current_password: string; new_password: string; confirm_password: string }): Promise<boolean> {
+    try {
+      await api.post('/auth/change-password', data);
+      return true;
+    } catch (error) {
+      console.error('Erreur changement mot de passe:', error);
+      throw error;
+    }
+  },
+
   getCurrentUser: async () => {
     const response = await api.get('/auth/me');
     return response.data;
